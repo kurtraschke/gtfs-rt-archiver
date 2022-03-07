@@ -1,0 +1,7 @@
+fetchInterval = 30
+
+[[feeds]]
+producer = "bad"
+feed = "bad"
+feedUrl = "https://doesnotexist"
+fetchInterval = 15

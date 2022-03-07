@@ -1,0 +1,25 @@
+storeResponseBody = false
+storeResponseBodyOnError = true
+
+[[feeds]]
+producer = "MBTA"
+feed = "TU"
+feedUrl = "https://cdn.mbta.com/realtime/TripUpdates.pb"
+basicAuthCredentials = {username = "foo", password="quux"}
+fetchInterval = 5
+
+[[feeds]]
+producer = "MBTA"
+feed = "VP"
+feedUrl = "https://cdn.mbta.com/realtime/VehiclePositions.pb"
+headers = {foo = "baz"}
+fetchInterval = 60
+
+[[feeds]]
+producer = "MBTA"
+feed = "Alerts"
+feedUrl = "https://cdn.mbta.com/realtime/Alerts.pb"
+extensions = ["MTARR", "LMM"]
+
+[feeds.headers]
+foo = "bar"

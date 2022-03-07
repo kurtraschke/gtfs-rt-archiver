@@ -1,0 +1,24 @@
+databaseUrl = "jdbc:postgresql://localhost:5432/postgres?user=postgres&password=archiver"
+
+[[feeds]]
+producer = "bad"
+feed = "bad"
+feedUrl = "https://httpbin.org/basic-auth/user/password"
+basicAuthCredentials = {username="user", password="password"}
+
+#[[feeds]]
+#producer = "bad"
+#feed = "bad"
+#feedUrl = "https://expired.badssl.com/"
+#
+#[[feeds]]
+#producer = "bad"
+#feed = "bad"
+#feedUrl = "https://expired.badssl.com/"
+#ignoreSSLErrors = true
+#
+#[[feeds]]
+#producer = "bad"
+#feed = "bad"
+#feedUrl = "https://self-signed.badssl.com/"
+#ignoreSSLErrors = true
