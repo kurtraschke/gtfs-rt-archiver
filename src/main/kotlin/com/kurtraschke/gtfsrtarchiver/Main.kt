@@ -6,6 +6,7 @@ import com.google.inject.Injector
 import com.google.inject.persist.PersistService
 import com.google.inject.persist.jpa.JpaPersistModule
 import com.kurtraschke.gtfsrtarchiver.jobs.FeedArchiveJob
+import com.kurtraschke.gtfsrtarchiver.listeners.JobFailureListener
 import com.kurtraschke.gtfsrtarchiver.modules.FeedFetcherModule
 import com.kurtraschke.gtfsrtarchiver.modules.OkHttpClientModule
 import com.kurtraschke.gtfsrtarchiver.modules.QuartzSchedulerModule

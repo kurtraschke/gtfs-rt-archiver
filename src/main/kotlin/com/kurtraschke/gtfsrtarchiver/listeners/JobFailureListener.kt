@@ -1,4 +1,4 @@
-package com.kurtraschke.gtfsrtarchiver
+package com.kurtraschke.gtfsrtarchiver.listeners
 
 import com.kurtraschke.gtfsrtarchiver.entities.FeedContents
 import com.kurtraschke.gtfsrtarchiver.jobs.JobUnpauserJob
