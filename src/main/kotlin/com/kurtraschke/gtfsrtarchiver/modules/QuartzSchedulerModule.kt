@@ -1,6 +1,7 @@
 package com.kurtraschke.gtfsrtarchiver.modules
 
 import com.kurtraschke.gtfsrtarchiver.GuiceJobFactory
+import com.kurtraschke.gtfsrtarchiver.listeners.SchedulerShutdownListener
 import dev.misfitlabs.kotlinguice4.KotlinModule
 import org.quartz.Scheduler
 import org.quartz.impl.StdSchedulerFactory
@@ -20,6 +21,7 @@ class QuartzSchedulerProvider : Provider<Scheduler> {
 
     override fun get(): Scheduler {
         val scheduler = StdSchedulerFactory.getDefaultScheduler()
+        scheduler.listenerManager.addSchedulerListener(SchedulerShutdownListener())
         scheduler.setJobFactory(jobFactory)
 
         return scheduler;

@@ -7,6 +7,7 @@ import com.google.inject.persist.PersistService
 import com.google.inject.persist.jpa.JpaPersistModule
 import com.kurtraschke.gtfsrtarchiver.jobs.FeedArchiveJob
 import com.kurtraschke.gtfsrtarchiver.listeners.JobFailureListener
+import com.kurtraschke.gtfsrtarchiver.listeners.schedulerShutdownLatch
 import com.kurtraschke.gtfsrtarchiver.modules.FeedFetcherModule
 import com.kurtraschke.gtfsrtarchiver.modules.OkHttpClientModule
 import com.kurtraschke.gtfsrtarchiver.modules.QuartzSchedulerModule
@@ -26,7 +27,6 @@ import picocli.CommandLine.*
 import java.nio.file.Path
 import javax.inject.Inject
 import kotlin.system.exitProcess
-
 
 @Command(
     name = "gtfs-rt-archiver", description = ["Archive GTFS-rt feeds to a PostgreSQL database"]
@@ -50,61 +50,67 @@ class Archiver : Runnable {
     lateinit var configurationFile: Path
 
     override fun run() {
-        val configuration = parseConfiguration(configurationFile)
+        try {
+            val configuration = parseConfiguration(configurationFile)
 
-        System.setProperty(Environment.URL, configuration.databaseUrl)
+            System.setProperty(Environment.URL, configuration.databaseUrl)
 
-        persistService.start()
+            persistService.start()
 
-        configuration.feeds.map { Pair(it.producer, it.feed) }.groupingBy { it }.eachCount().filterValues { it > 1 }
-            .forEach {
-                log.warn(
-                    "Feed {} {} is defined more than once; behavior is undefined", it.key.first, it.key.second
-                )
-            }
+            configuration.feeds.map { Pair(it.producer, it.feed) }.groupingBy { it }.eachCount().filterValues { it > 1 }
+                .forEach {
+                    log.warn(
+                        "Feed {} {} is defined more than once; behavior is undefined", it.key.first, it.key.second
+                    )
+                }
 
-        if (!oneShot) {
-            scheduler.start()
+            if (!oneShot) {
+                configuration.feeds.forEach { feed ->
+                    val fetchInterval = (feed.fetchInterval ?: configuration.fetchInterval ?: 30).coerceAtLeast(15)
+                    val storeResponseBody = configuration.storeResponseBody ?: false
+                    val storeResponseBodyOnError = configuration.storeResponseBodyOnError ?: true
 
-            configuration.feeds.forEach { feed ->
-                val fetchInterval = (feed.fetchInterval ?: configuration.fetchInterval ?: 30).coerceAtLeast(15)
-                val storeResponseBody = configuration.storeResponseBody ?: false
-                val storeResponseBodyOnError = configuration.storeResponseBodyOnError ?: true
+                    val jobDataMap = JobDataMap()
+                    jobDataMap["feed"] = feed
+                    jobDataMap["storeResponseBody"] = storeResponseBody
+                    jobDataMap["storeResponseBodyOnError"] = storeResponseBodyOnError
 
-                val jobDataMap = JobDataMap()
-                jobDataMap["feed"] = feed
-                jobDataMap["storeResponseBody"] = storeResponseBody
-                jobDataMap["storeResponseBodyOnError"] = storeResponseBodyOnError
+                    val job = newJob(FeedArchiveJob::class.java).withIdentity(feed.feed, feed.producer)
+                        .usingJobData(jobDataMap).build()
 
-                val job =
-                    newJob(FeedArchiveJob::class.java).withIdentity(feed.feed, feed.producer).usingJobData(jobDataMap)
-                        .build()
+                    scheduler.listenerManager.addJobListener(JobFailureListener(), KeyMatcher.keyEquals(job.key));
 
-                scheduler.listenerManager.addJobListener(JobFailureListener(), KeyMatcher.keyEquals(job.key));
-
-                val trigger = newTrigger().withIdentity(feed.feed, feed.producer).startNow().withSchedule(
+                    val trigger = newTrigger().withIdentity(feed.feed, feed.producer).startNow().withSchedule(
                         simpleSchedule().withIntervalInSeconds(fetchInterval).repeatForever()
                     ).build()
 
-                scheduler.scheduleJob(job, trigger)
-            }
-        } else {
-            val feedFetcher = injector.getInstance<FeedFetcher>()
+                    scheduler.scheduleJob(job, trigger)
+                }
 
-            configuration.feeds.forEach { feed ->
-                val storeResponseBody = configuration.storeResponseBody ?: false
-                val storeResponseBodyOnError = configuration.storeResponseBodyOnError ?: true
+                scheduler.start()
+            } else {
+                scheduler.shutdown() //Shut down Quartz (since we don't need it in one-shot mode), so we can exit normally
+                val feedFetcher = injector.getInstance<FeedFetcher>()
 
-                try {
-                    MDC.put("producer", feed.producer)
-                    MDC.put("feed", feed.feed)
-                    val fc = feedFetcher.fetchFeed(feed, storeResponseBody, storeResponseBodyOnError)
-                    log.info(fc.toString())
-                } catch (e: Exception) {
-                    log.error("Uncaught exception during feed fetch", e)
-                    MDC.clear()
+                configuration.feeds.forEach { feed ->
+                    val storeResponseBody = configuration.storeResponseBody ?: false
+                    val storeResponseBodyOnError = configuration.storeResponseBodyOnError ?: true
+
+                    try {
+                        MDC.put("producer", feed.producer)
+                        MDC.put("feed", feed.feed)
+                        val fc = feedFetcher.fetchFeed(feed, storeResponseBody, storeResponseBodyOnError)
+                        log.info(fc.toString())
+                    } catch (e: Exception) {
+                        log.error("Uncaught exception during feed fetch", e)
+                        MDC.clear()
+                    }
                 }
             }
+        } catch (e: Exception) {
+            log.warn("Shutting down scheduler.")
+            scheduler.shutdown()
+            throw e
         }
     }
 }
@@ -113,6 +119,7 @@ class Archiver : Runnable {
 fun main(args: Array<String>) {
     //Security.insertProviderAt(Conscrypt.newProvider(), 1)
     val exitCode = CommandLine(Archiver::class.java, GuiceFactory()).execute(*args)
+    schedulerShutdownLatch.await()
     exitProcess(exitCode)
 }
 
