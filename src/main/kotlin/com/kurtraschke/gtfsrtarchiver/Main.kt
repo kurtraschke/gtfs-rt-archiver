@@ -57,7 +57,7 @@ class Archiver : Runnable {
 
             persistService.start()
 
-            configuration.feeds.map { Pair(it.producer, it.feed) }.groupingBy { it }.eachCount().filterValues { it > 1 }
+            configuration.feeds.groupingBy { Pair(it.producer, it.feed) }.eachCount().filterValues { it > 1 }
                 .forEach {
                     log.warn(
                         "Feed {} {} is defined more than once; behavior is undefined", it.key.first, it.key.second
@@ -100,9 +100,10 @@ class Archiver : Runnable {
                         MDC.put("producer", feed.producer)
                         MDC.put("feed", feed.feed)
                         val fc = feedFetcher.fetchFeed(feed, storeResponseBody, storeResponseBodyOnError)
-                        log.info(fc.toString())
+                        fc?.let { log.info(it.toString()) }
                     } catch (e: Exception) {
                         log.error("Uncaught exception during feed fetch", e)
+                    } finally {
                         MDC.clear()
                     }
                 }

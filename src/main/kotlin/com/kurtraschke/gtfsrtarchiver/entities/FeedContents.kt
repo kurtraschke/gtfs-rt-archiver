@@ -14,7 +14,6 @@ import javax.persistence.*
 @TypeDef(name = "json", typeClass = JsonType::class)
 @IdClass(FeedContentsKey::class)
 data class FeedContents(
-
     @Id @Column(columnDefinition = "text") var producer: String,
 
     @Id @Column(columnDefinition = "text") var feed: String,

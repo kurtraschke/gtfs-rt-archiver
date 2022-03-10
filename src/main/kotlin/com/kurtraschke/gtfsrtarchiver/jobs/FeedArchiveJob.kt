@@ -31,8 +31,9 @@ class FeedArchiveJob : Job {
             context.result = fc
         } catch (e: Exception) {
             log.error("Uncaught exception during feed fetch", e)
-            MDC.clear()
             throw JobExecutionException(e)
+        } finally {
+            MDC.clear()
         }
     }
 }

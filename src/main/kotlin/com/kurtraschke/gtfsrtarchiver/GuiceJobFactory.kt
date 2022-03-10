@@ -12,7 +12,7 @@ class GuiceJobFactory : PropertySettingJobFactory() {
     @Inject
     lateinit var injector: Injector
 
-    override fun newJob(bundle: TriggerFiredBundle?, scheduler: Scheduler?): Job {
+    override fun newJob(bundle: TriggerFiredBundle, scheduler: Scheduler): Job {
         val job = super.newJob(bundle, scheduler)
         injector.injectMembers(job)
 

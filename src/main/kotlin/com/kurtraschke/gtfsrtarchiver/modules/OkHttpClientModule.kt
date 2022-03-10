@@ -9,7 +9,6 @@ class OkHttpClientModule : AbstractModule() {
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
-        val client = OkHttpClient()
-        return client;
+        return OkHttpClient();
     }
 }

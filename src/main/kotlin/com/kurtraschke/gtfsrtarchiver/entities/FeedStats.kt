@@ -14,9 +14,10 @@ data class FeedStats(
     @Id @Column(columnDefinition = "text") var feed: String,
 
     var fetchTime: Instant,
-
-    var headerDate: Instant, var lastModified: Instant?, var etag: String?, var gtfsRtHeaderTimestamp: Instant
-
+    var headerDate: Instant,
+    var lastModified: Instant?,
+    var etag: String?,
+    var gtfsRtHeaderTimestamp: Instant
 ) {
     var id: FeedStatsKey
         get() = FeedStatsKey(
