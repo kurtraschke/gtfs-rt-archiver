@@ -12,6 +12,11 @@
       <option name="url" value="https://repo.camsys-apps.com/releases/" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="jakarta-persistence" />
+      <option name="name" value="jakarta-persistence" />
+      <option name="url" value="https://jakarta.oss.sonatype.org/content/repositories/staging/jakarta/persistence/" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="central" />
       <option name="name" value="Maven Central repository" />
       <option name="url" value="https://repo1.maven.org/maven2" />
@@ -30,6 +35,11 @@
       <option name="id" value="public-jboss" />
       <option name="name" value="public-jboss" />
       <option name="url" value="https://repository.jboss.org/nexus/content/groups/public-jboss/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="jakarta-persistence" />
+      <option name="name" value="jakarta-persistence" />
+      <option name="url" value="https://jakarta.oss.sonatype.org/content/repositories/staging/" />
     </remote-repository>
   </component>
 </project>
