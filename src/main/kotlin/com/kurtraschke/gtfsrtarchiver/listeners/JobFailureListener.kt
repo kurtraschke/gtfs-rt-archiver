@@ -8,10 +8,11 @@ import org.quartz.DateBuilder.futureDate
 import org.quartz.listeners.JobListenerSupport
 import kotlin.math.pow
 
+private const val MAX_CONSECUTIVE_FAILURES = 3
+
 class JobFailureListener : JobListenerSupport() {
     private var consecutiveFailureCount = 0
     private var pauseCount = 0
-    private val maxConsecutiveFailures = 3
 
     override fun getName(): String = "JobFailureListener"
 
@@ -22,7 +23,7 @@ class JobFailureListener : JobListenerSupport() {
         if (threwException || reportedError) {
             consecutiveFailureCount++
 
-            if (consecutiveFailureCount >= maxConsecutiveFailures) {
+            if (consecutiveFailureCount >= MAX_CONSECUTIVE_FAILURES) {
                 consecutiveFailureCount = 0
                 pauseCount++
 
@@ -35,7 +36,7 @@ class JobFailureListener : JobListenerSupport() {
                     "Pausing execution of job {} for {} seconds due to consecutive failure count exceeding {}",
                     jobKey,
                     pauseDuration,
-                    maxConsecutiveFailures
+                    MAX_CONSECUTIVE_FAILURES
                 )
                 scheduler.pauseJob(jobKey)
 

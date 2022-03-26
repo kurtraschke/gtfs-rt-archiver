@@ -28,6 +28,7 @@ import java.nio.file.Path
 import javax.inject.Inject
 import kotlin.system.exitProcess
 
+
 @Command(
     name = "gtfs-rt-archiver", description = ["Archive GTFS-rt feeds to a PostgreSQL database"]
 )
@@ -78,7 +79,7 @@ class Archiver : Runnable {
                     val job = newJob(FeedArchiveJob::class.java).withIdentity(feed.feed, feed.producer)
                         .usingJobData(jobDataMap).build()
 
-                    scheduler.listenerManager.addJobListener(JobFailureListener(), KeyMatcher.keyEquals(job.key));
+                    scheduler.listenerManager.addJobListener(JobFailureListener(), KeyMatcher.keyEquals(job.key))
 
                     val trigger = newTrigger().withIdentity(feed.feed, feed.producer).startNow().withSchedule(
                         simpleSchedule().withIntervalInSeconds(fetchInterval).repeatForever()
@@ -116,9 +117,7 @@ class Archiver : Runnable {
     }
 }
 
-
 fun main(args: Array<String>) {
-    //Security.insertProviderAt(Conscrypt.newProvider(), 1)
     val exitCode = CommandLine(Archiver::class.java, GuiceFactory()).execute(*args)
     schedulerShutdownLatch.await()
     exitProcess(exitCode)

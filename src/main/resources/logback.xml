@@ -14,10 +14,10 @@
     <logger name="com.kurtraschke.gtfsrtarchiver" level="INFO"/>
 
     <logger name="com.kurtraschke.gtfsrtarchiver.DefaultFeedFetcher" level="DEBUG" additivity="false">
-        <appender-ref ref="STDOUT-MDC" />
+        <appender-ref ref="STDOUT-MDC"/>
     </logger>
 
-    <root level="warn">
-        <appender-ref ref="STDOUT" />
+    <root level="WARN">
+        <appender-ref ref="STDOUT"/>
     </root>
 </configuration>

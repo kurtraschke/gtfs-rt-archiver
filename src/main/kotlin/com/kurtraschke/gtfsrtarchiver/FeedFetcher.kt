@@ -3,14 +3,17 @@ package com.kurtraschke.gtfsrtarchiver
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.ImmutableListMultimap
+import com.google.common.collect.ListMultimap
 import com.google.common.collect.Streams
 import com.google.inject.Inject
 import com.google.inject.persist.Transactional
 import com.google.protobuf.ExtensionRegistry
 import com.google.protobuf.InvalidProtocolBufferException
-import com.google.transit.realtime.GtfsRealtime
+import com.google.transit.realtime.GtfsRealtime.FeedMessage
 import com.hubspot.jackson.datatype.protobuf.ProtobufJacksonConfig
 import com.hubspot.jackson.datatype.protobuf.ProtobufModule
+import com.kurtraschke.gtfsrtarchiver.Configuration.Feed
+import com.kurtraschke.gtfsrtarchiver.FetchResult.FetchState.*
 import com.kurtraschke.gtfsrtarchiver.entities.FeedContents
 import com.kurtraschke.gtfsrtarchiver.entities.FeedStats
 import com.kurtraschke.gtfsrtarchiver.entities.FeedStats_
@@ -19,20 +22,77 @@ import okhttp3.Headers.Companion.toHeaders
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.IOException
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
 import java.time.Instant
 import javax.inject.Provider
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
-import javax.net.ssl.X509TrustManager
 import javax.persistence.EntityManager
 import javax.persistence.NoResultException
 
 interface FeedFetcher {
     fun fetchFeed(
-        feed: Configuration.Feed, storeResponseBody: Boolean, storeResponseBodyOnError: Boolean
+        feed: Feed, storeResponseBody: Boolean, storeResponseBodyOnError: Boolean
     ): FeedContents?
+}
+
+data class FetchResult(
+    val fetchState: FetchState,
+    val responseTimeMillis: Int?,
+    val errorMessage: String?,
+    val statusCode: Int?,
+    val statusMessage: String?,
+    val protocol: Protocol?,
+    val responseHeaders: ListMultimap<String, String>?,
+    val responseBody: ByteArray?,
+    val feedMessage: FeedMessage?,
+    val feedContents: JsonNode?
+) {
+    enum class FetchState {
+        ERROR, //any error: IO errors, HTTP response codes indicating an error, protobuf problems, etc.
+        NOT_MODIFIED, //we performed a conditional GET and got a 304 back
+        UNCHANGED, //successful fetch but the header timestamp had not changed since the last fetch
+        VALID //all other cases
+    }
+
+    constructor(fetchState: FetchState) : this(
+        fetchState, null, null, null, null, null,
+        null, null, null, null
+    )
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as FetchResult
+
+        if (fetchState != other.fetchState) return false
+        if (responseTimeMillis != other.responseTimeMillis) return false
+        if (errorMessage != other.errorMessage) return false
+        if (statusCode != other.statusCode) return false
+        if (statusMessage != other.statusMessage) return false
+        if (protocol != other.protocol) return false
+        if (responseHeaders != other.responseHeaders) return false
+        if (responseBody != null) {
+            if (other.responseBody == null) return false
+            if (!responseBody.contentEquals(other.responseBody)) return false
+        } else if (other.responseBody != null) return false
+        if (feedMessage != other.feedMessage) return false
+        if (feedContents != other.feedContents) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = fetchState.hashCode()
+        result = 31 * result + (responseTimeMillis ?: 0)
+        result = 31 * result + (errorMessage?.hashCode() ?: 0)
+        result = 31 * result + (statusCode ?: 0)
+        result = 31 * result + (statusMessage?.hashCode() ?: 0)
+        result = 31 * result + (protocol?.hashCode() ?: 0)
+        result = 31 * result + (responseHeaders?.hashCode() ?: 0)
+        result = 31 * result + (responseBody?.contentHashCode() ?: 0)
+        result = 31 * result + (feedMessage?.hashCode() ?: 0)
+        result = 31 * result + (feedContents?.hashCode() ?: 0)
+        return result
+    }
 }
 
 open class DefaultFeedFetcher : FeedFetcher {
@@ -46,27 +106,14 @@ open class DefaultFeedFetcher : FeedFetcher {
 
     @Transactional
     override fun fetchFeed(
-        feed: Configuration.Feed, storeResponseBody: Boolean, storeResponseBodyOnError: Boolean
+        feed: Feed, storeResponseBody: Boolean, storeResponseBodyOnError: Boolean
     ): FeedContents? {
         val em = pem.get()
+
+        val feedStats = getFeedStats(em, feed)
+
         val fetchTime = Instant.now()
         log.debug("Beginning fetch at $fetchTime")
-
-        val builder = em.criteriaBuilder
-
-        val criteria = builder.createQuery(FeedStats::class.java)
-        val root = criteria.from(FeedStats::class.java)
-        criteria.select(root)
-        criteria.where(
-            builder.equal(root.get(FeedStats_.producer), feed.producer),
-            builder.equal(root.get(FeedStats_.feed), feed.feed)
-        )
-
-        val feedStats = try {
-            em.createQuery(criteria).singleResult
-        } catch (e: NoResultException) {
-            null
-        }
 
         val feedUrlBuilder = feed.feedUrl.newBuilder()
         feed.queryParameters.orEmpty().forEach(feedUrlBuilder::addQueryParameter)
@@ -80,9 +127,12 @@ open class DefaultFeedFetcher : FeedFetcher {
             it.lastModified?.let { headersBuilder.set("If-Modified-Since", it) }
         }
 
-        val request = Request.Builder().url(feedUrlBuilder.build()).headers(headersBuilder.build()).build()
+        val request = Request.Builder()
+            .url(feedUrlBuilder.build())
+            .headers(headersBuilder.build())
+            .build()
 
-        val localClient = client.newBuilder().apply {
+        val customizedClient = client.newBuilder().apply {
             if (feed.ignoreSSLErrors == true) {
                 ignoreAllSSLErrors()
             }
@@ -101,109 +151,121 @@ open class DefaultFeedFetcher : FeedFetcher {
             }
         }.build()
 
-        var fc: FeedContents
-
-        try {
-            localClient.newCall(request).execute().use { response ->
+        val fr: FetchResult = try {
+            customizedClient.newCall(request).execute().use { response ->
                 if (conditionalGet && response.code == 304) {
-                    log.debug("Received 304 in response to conditional GET")
-                    return null
-                }
+                    FetchResult(NOT_MODIFIED)
+                } else {
+                    val isError = !response.isSuccessful
 
-                val isError = !response.isSuccessful
+                    val statusCode = response.code
+                    val statusMessage = response.message
+                    val protocol = response.protocol
 
-                val statusCode = response.code
-                val statusMessage = response.message
-                val protocol = response.protocol
-
-                //Lower-case HTTP header keys for consistency
-                val responseHeaders = Streams.stream(response.headers).collect(
-                    ImmutableListMultimap.toImmutableListMultimap(
-                        { p -> p.first.lowercase() }, Pair<String, String>::second
+                    //Lower-case HTTP header keys for consistency
+                    val responseHeaders = Streams.stream(response.headers).collect(
+                        ImmutableListMultimap.toImmutableListMultimap(
+                            { p -> p.first.lowercase() }, Pair<String, String>::second
+                        )
                     )
-                )
 
-                val responseTimeMillis = response.receivedResponseAtMillis - response.sentRequestAtMillis
+                    val responseTimeMillis = (response.receivedResponseAtMillis - response.sentRequestAtMillis).toInt()
+                    val responseBodyBytes = response.body!!.bytes()
 
-                val responseBodyBytes = response.body!!.bytes()
+                    if (!isError) {
+                        try {
+                            val (feedMessage, responseContents) = parseResponse(
+                                responseBodyBytes, feed.extensions.orEmpty()
+                            )
 
-                fc = FeedContents(
-                    feed.producer,
-                    feed.feed,
-                    fetchTime,
-                    isError,
-                    null,
-                    statusCode,
-                    statusMessage,
-                    protocol,
-                    responseHeaders,
-                    responseTimeMillis.toInt()
-                )
-
-                fc.responseBodyLength = responseBodyBytes.size
-
-                if (!isError) {
-                    try {
-                        fc.responseContents = parseResponse(responseBodyBytes, feed.extensions.orEmpty())
-
-                        val headerTimestamp =
-                            Instant.ofEpochSecond(fc.responseContents!!.get("header").get("timestamp").asLong())
-
-                        feedStats?.let {
-                            if (headerTimestamp <= it.gtfsRtHeaderTimestamp) {
-                                log.debug("Not storing result as GTFS-rt header timestamp is not newer than last fetched feed")
-                                return null
+                            if ((feedStats != null) && (Instant.ofEpochSecond(feedMessage.header.timestamp) <= feedStats.gtfsRtHeaderTimestamp)) {
+                                FetchResult(UNCHANGED)
+                            } else {
+                                FetchResult(
+                                    VALID, responseTimeMillis, null, statusCode, statusMessage, protocol,
+                                    responseHeaders,
+                                    responseBodyBytes, feedMessage, responseContents
+                                )
                             }
+                        } catch (e: InvalidProtocolBufferException) {
+                            log.warn("Protobuf decode exception", e)
+                            FetchResult(
+                                ERROR, responseTimeMillis, e.toString(), statusCode, statusMessage, protocol,
+                                responseHeaders, responseBodyBytes, null, null
+                            )
                         }
-                    } catch (e: InvalidProtocolBufferException) {
-                        log.warn("Protobuf decode exception", e)
-                        fc.isError = true
-                        fc.errorMessage = e.toString()
+                    } else {
+                        FetchResult(
+                            ERROR, responseTimeMillis, null, statusCode, statusMessage, protocol, responseHeaders,
+                            responseBodyBytes, null, null
+                        )
                     }
-                }
-
-                if (storeResponseBody or (fc.isError and storeResponseBodyOnError)) {
-                    fc.responseBody = responseBodyBytes
                 }
             }
         } catch (ie: IOException) {
             log.warn("IOException during feed fetch", ie)
-            fc = FeedContents(
-                feed.producer, feed.feed, fetchTime, true, ie.toString(), null, null, null, null, null
+            FetchResult(
+                ERROR, null, ie.toString(), null, null, null,
+                null, null, null, null
             )
         }
 
-        em.persist(fc)
+        val fc = when (fr.fetchState) {
+            VALID, ERROR -> {
+                val fc = FeedContents(
+                    feed.producer, feed.feed, fetchTime, fr.fetchState == ERROR, fr.errorMessage,
+                    fr.statusCode, fr.statusMessage, fr.protocol, fr.responseHeaders, fr.responseTimeMillis
+                )
+
+                fc.responseBodyLength = fr.responseBody?.size
+
+                if (storeResponseBody || (fr.fetchState == ERROR && storeResponseBodyOnError)) {
+                    fc.responseBody = fr.responseBody
+                }
+
+                fc.responseContents = fr.feedContents
+
+                em.persist(fc)
+
+                fc
+            }
+            NOT_MODIFIED, UNCHANGED -> {
+                log.debug("Not storing feed; status: {}", fr.fetchState)
+                null
+            }
+        }
+
+        em.close()
+
         return fc
     }
 }
 
-fun parseResponse(responseBodyBytes: ByteArray, extensions: List<GtfsRealtimeExtensions>): JsonNode {
+fun parseResponse(responseBodyBytes: ByteArray, extensions: List<GtfsRealtimeExtensions>): Pair<FeedMessage, JsonNode> {
     val registry = ExtensionRegistry.newInstance()
     extensions.forEach { it.registerExtension(registry) }
+    val fm = FeedMessage.parseFrom(responseBodyBytes, registry)
 
     val config = ProtobufJacksonConfig.builder().extensionRegistry(registry).build()
-
-    val fm = GtfsRealtime.FeedMessage.parseFrom(responseBodyBytes, registry)
-
     val mapper = ObjectMapper()
     mapper.registerModule(ProtobufModule(config))
-    return mapper.valueToTree(fm)
+    return Pair(fm, mapper.valueToTree(fm))
 }
 
-fun OkHttpClient.Builder.ignoreAllSSLErrors(): OkHttpClient.Builder {
-    val naiveTrustManager = object : X509TrustManager {
-        override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-        override fun checkClientTrusted(certs: Array<X509Certificate>, authType: String) = Unit
-        override fun checkServerTrusted(certs: Array<X509Certificate>, authType: String) = Unit
+fun getFeedStats(em: EntityManager, feed: Feed): FeedStats? {
+    val builder = em.criteriaBuilder
+    val criteria = builder.createQuery(FeedStats::class.java)
+    val root = criteria.from(FeedStats::class.java)
+    criteria.select(root)
+    criteria.where(
+        builder.equal(root.get(FeedStats_.producer), feed.producer), builder.equal(root.get(FeedStats_.feed), feed.feed)
+    )
+
+    val feedStats = try {
+        em.createQuery(criteria).singleResult
+    } catch (e: NoResultException) {
+        null
     }
 
-    val insecureSocketFactory = SSLContext.getInstance("TLSv1.2").apply {
-        val trustAllCerts = arrayOf<TrustManager>(naiveTrustManager)
-        init(null, trustAllCerts, SecureRandom())
-    }.socketFactory
-
-    sslSocketFactory(insecureSocketFactory, naiveTrustManager)
-    hostnameVerifier { _, _ -> true }
-    return this
+    return feedStats
 }

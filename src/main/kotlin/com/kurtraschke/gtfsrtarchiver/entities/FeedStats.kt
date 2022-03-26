@@ -19,6 +19,7 @@ data class FeedStats(
     var etag: String?,
     var gtfsRtHeaderTimestamp: Instant
 ) {
+    @Suppress("unused")
     var id: FeedStatsKey
         get() = FeedStatsKey(
             producer, feed
@@ -27,6 +28,26 @@ data class FeedStats(
             producer = id.producer!!
             feed = id.feed!!
         }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as FeedStats
+
+        if (producer != other.producer) return false
+        if (feed != other.feed) return false
+        if (fetchTime != other.fetchTime) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = producer.hashCode()
+        result = 31 * result + feed.hashCode()
+        result = 31 * result + fetchTime.hashCode()
+        return result
+    }
 }
 
 data class FeedStatsKey(
@@ -34,5 +55,8 @@ data class FeedStatsKey(
 
     var feed: String?,
 ) : java.io.Serializable {
-    constructor() : this(null, null) {}
+    @Suppress("unused")
+    constructor() : this(null, null)
 }
+
+
