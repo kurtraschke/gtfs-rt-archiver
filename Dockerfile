@@ -8,4 +8,6 @@ RUN mvn -B -e verify
 
 # package without maven
 FROM amazoncorretto:17
-COPY --from=builder /usr/src/app/target/*.jar /app/
+COPY --from=builder /usr/src/app/target/*-withAllDependencies.jar /app/gtfs-rt-archiver.jar
+
+ENTRYPOINT ["java", "-jar", "/app/gtfs-rt-archiver.jar"]
