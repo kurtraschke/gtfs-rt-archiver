@@ -219,8 +219,10 @@ open class DefaultFeedFetcher : FeedFetcher {
 
                 fc.responseBodyLength = fr.responseBody?.size
 
-                if (storeResponseBody || (fr.fetchState == ERROR && storeResponseBodyOnError)) {
-                    fc.responseBody = fr.responseBody
+                fc.responseBody = if (storeResponseBody || (fr.fetchState == ERROR && storeResponseBodyOnError)) {
+                    fr.responseBody
+                } else {
+                    null
                 }
 
                 fc.responseContents = fr.feedContents
@@ -258,14 +260,13 @@ fun getFeedStats(em: EntityManager, feed: Feed): FeedStats? {
     val root = criteria.from(FeedStats::class.java)
     criteria.select(root)
     criteria.where(
-        builder.equal(root.get(FeedStats_.producer), feed.producer), builder.equal(root.get(FeedStats_.feed), feed.feed)
+        builder.equal(root.get(FeedStats_.producer), feed.producer),
+        builder.equal(root.get(FeedStats_.feed), feed.feed)
     )
 
-    val feedStats = try {
+    return try {
         em.createQuery(criteria).singleResult
     } catch (e: NoResultException) {
         null
     }
-
-    return feedStats
 }
