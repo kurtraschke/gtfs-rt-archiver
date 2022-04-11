@@ -8,6 +8,7 @@ import com.google.inject.persist.jpa.JpaPersistModule
 import com.kurtraschke.gtfsrtarchiver.jobs.FeedArchiveJob
 import com.kurtraschke.gtfsrtarchiver.listeners.JobFailureListener
 import com.kurtraschke.gtfsrtarchiver.listeners.schedulerShutdownLatch
+import com.kurtraschke.gtfsrtarchiver.listeners.schedulerStarted
 import com.kurtraschke.gtfsrtarchiver.modules.FeedFetcherModule
 import com.kurtraschke.gtfsrtarchiver.modules.OkHttpClientModule
 import com.kurtraschke.gtfsrtarchiver.modules.QuartzSchedulerModule
@@ -90,7 +91,6 @@ class Archiver : Runnable {
 
                 scheduler.start()
             } else {
-                scheduler.shutdown() //Shut down Quartz (since we don't need it in one-shot mode), so we can exit normally
                 val feedFetcher = injector.getInstance<FeedFetcher>()
 
                 configuration.feeds.forEach { feed ->
@@ -119,7 +119,9 @@ class Archiver : Runnable {
 
 fun main(args: Array<String>) {
     val exitCode = CommandLine(Archiver::class.java, GuiceFactory()).execute(*args)
-    schedulerShutdownLatch.await()
+    if (schedulerStarted) {
+        schedulerShutdownLatch.await()
+    }
     exitProcess(exitCode)
 }
 

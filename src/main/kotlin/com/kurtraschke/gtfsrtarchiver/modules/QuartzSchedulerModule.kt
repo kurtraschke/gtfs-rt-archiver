@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 class QuartzSchedulerModule : KotlinModule() {
     override fun configure() {
-        bind<Scheduler>().toProvider<QuartzSchedulerProvider>().`in`(Singleton::class.java)
+        bind<Scheduler>().toProvider<QuartzSchedulerProvider>().`in`<Singleton>()
     }
 }
 
