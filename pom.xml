@@ -15,6 +15,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kotlin.code.style>official</kotlin.code.style>
         <kotlin.compiler.jvmTarget>16</kotlin.compiler.jvmTarget>
+        <kotlin.version>1.6.21</kotlin.version>
+        <hibernate.version>5.6.7.Final</hibernate.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <mainClass>com.kurtraschke.gtfsrtarchiver.MainKt</mainClass>
@@ -42,7 +44,7 @@
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
-                <version>1.6.10</version>
+                <version>${kotlin.version}</version>
                 <executions>
                     <execution>
                         <id>kapt</id>
@@ -58,7 +60,7 @@
                                 <annotationProcessorPath>
                                     <groupId>org.hibernate</groupId>
                                     <artifactId>hibernate-jpamodelgen</artifactId>
-                                    <version>5.6.5.Final</version>
+                                    <version>${hibernate.version}</version>
                                 </annotationProcessorPath>
                                 <annotationProcessorPath>
                                     <groupId>info.picocli</groupId>
@@ -97,7 +99,7 @@
                     <dependency>
                         <groupId>org.jetbrains.kotlin</groupId>
                         <artifactId>kotlin-maven-noarg</artifactId>
-                        <version>1.6.10</version>
+                        <version>${kotlin.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -133,7 +135,7 @@
             <plugin>
                 <groupId>org.hibernate.orm.tooling</groupId>
                 <artifactId>hibernate-enhance-maven-plugin</artifactId>
-                <version>5.6.5.Final</version>
+                <version>${hibernate.version}</version>
                 <executions>
                     <execution>
                         <configuration>
@@ -234,7 +236,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>2.12.3</version>
+                <version>2.13.2.20220328</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -245,7 +247,7 @@
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-test-junit5</artifactId>
-            <version>1.6.10</version>
+            <version>${kotlin.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -257,13 +259,23 @@
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
-            <version>1.6.10</version>
+            <version>${kotlin.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.quartz-scheduler</groupId>
             <artifactId>quartz</artifactId>
             <version>2.3.2</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.mchange</groupId>
+                    <artifactId>c3p0</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.zaxxer</groupId>
+                    <artifactId>HikariCP-java7</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -282,12 +294,12 @@
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
-            <version>5.6.5.Final</version>
+            <version>${hibernate.version}</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-hikaricp</artifactId>
-            <version>5.6.5.Final</version>
+            <version>${hibernate.version}</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -300,7 +312,7 @@
         <dependency>
             <groupId>com.vladmihalcea</groupId>
             <artifactId>hibernate-types-55</artifactId>
-            <version>2.14.0</version>
+            <version>2.16.1</version>
         </dependency>
 
         <!-- jackson, including guava and protobuf -->
@@ -340,7 +352,7 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>3.19.4</version>
+            <version>3.20.0</version>
         </dependency>
 
         <!-- guava -->
