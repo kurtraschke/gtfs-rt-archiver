@@ -16,7 +16,7 @@
         <kotlin.code.style>official</kotlin.code.style>
         <kotlin.compiler.jvmTarget>16</kotlin.compiler.jvmTarget>
         <kotlin.version>1.7.10</kotlin.version>
-        <hibernate.version>5.6.10.Final</hibernate.version>
+        <hibernate.version>5.6.11.Final</hibernate.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <mainClass>com.kurtraschke.gtfsrtarchiver.MainKt</mainClass>
