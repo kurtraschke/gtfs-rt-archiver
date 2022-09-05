@@ -2,8 +2,12 @@ name: Delete untagged container images
 
 on:
   schedule:
-    - cron: '3 0 * * *'
-  workflow-dispatch:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+  workflow_run:
+    workflows: [Docker]
+    types:
+      - completed
 
 permissions:
   packages: write
