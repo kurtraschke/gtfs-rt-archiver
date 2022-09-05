@@ -41,7 +41,7 @@ class JobFailureListener : JobListenerSupport() {
                 consecutiveFailureCount = 0
                 pauseCount++
 
-                val pauseDuration: Int = (PAUSE_ESCALATION.pow(pauseCount.toDouble().coerceAtMost(MAX_PAUSE_COUNT)) * 30).toInt()
+                val pauseDuration: Int = (PAUSE_ESCALATION.pow(pauseCount.toDouble().coerceAtMost(MAX_PAUSE_COUNT)) * PAUSE_PERIOD).toInt()
 
                 log.warn(
                     "Pausing execution of job {} for {} seconds due to consecutive failure count exceeding {}",
