@@ -1,0 +1,24 @@
+name: Delete untagged container images
+
+on:
+  schedule:
+    - cron: '3 0 * * *'
+  workflow-dispatch:
+
+permissions:
+  packages: write
+
+jobs:
+  clean-ghcr:
+    name: Delete untagged container images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete untagged container images
+        uses: snok/container-retention-policy@v1.5.0
+        with:
+          image-names: gtfs-rt-archiver
+          cut-off: 1 week ago UTC
+          account-type: personal
+          keep-at-least: 3
+          untagged-only: true
+          token: ${{ secrets.GITHUB_TOKEN }}
