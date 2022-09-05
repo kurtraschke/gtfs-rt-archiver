@@ -1,9 +1,8 @@
 package com.kurtraschke.gtfsrtarchiver
 
-import cc.ekblad.toml.TomlValue
-import cc.ekblad.toml.serialization.from
-import cc.ekblad.toml.transcoding.TomlDecoder
-import cc.ekblad.toml.transcoding.decode
+import cc.ekblad.toml.decode
+import cc.ekblad.toml.model.TomlValue
+import cc.ekblad.toml.tomlMapper
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.nio.file.Path
@@ -31,15 +30,16 @@ data class Configuration(
 }
 
 fun parseConfiguration(theConfiguration: Path): Configuration {
-    val tomlDocument = TomlValue.from(theConfiguration)
-
-    val tomlDecoder = TomlDecoder.default.with { _, tomlValue: TomlValue ->
-            val urlString: String = tomlValue.decode()
+    val mapper = tomlMapper {
+        decoder { it: TomlValue.String ->
+            val urlString: String = it.value
             urlString.toHttpUrlOrNull()
-        }.with { _, tomlValue: TomlValue ->
-            val enumString: String = tomlValue.decode()
+        }
+        decoder { it: TomlValue.String ->
+            val enumString: String = it.value
             GtfsRealtimeExtensions.valueOf(enumString)
         }
+    }
 
-    return tomlDocument.decode(tomlDecoder)
+    return mapper.decode(theConfiguration)
 }
