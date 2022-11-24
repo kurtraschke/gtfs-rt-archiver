@@ -22,6 +22,21 @@
         <mainClass>com.kurtraschke.gtfsrtarchiver.MainKt</mainClass>
     </properties>
 
+    <scm>
+        <connection>scm:git:ssh://github.com/kurtraschke/gtfs-rt-archiver.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/kurtraschke/gtfs-rt-archiver.git</developerConnection>
+        <url>https://github.com/kurtraschke/gtfs-rt-archiver</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/kurtraschke/gtfs-rt-archiver/</url>
+        </repository>
+    </distributionManagement>
+
     <repositories>
         <repository>
             <id>jitpack</id>
@@ -220,6 +235,37 @@
                         ${mainClass}
                     </mainClass>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <to>
+                        <image>ghcr.io/kurtraschke/gtfs-rt-archiver</image>
+                    </to>
+                    <from>
+                        <platforms>
+                            <platform>
+                                <architecture>amd64</architecture>
+                                <os>linux</os>
+                            </platform>
+                            <platform>
+                                <architecture>arm64</architecture>
+                                <os>linux</os>
+                            </platform>
+                        </platforms>
+                    </from>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
