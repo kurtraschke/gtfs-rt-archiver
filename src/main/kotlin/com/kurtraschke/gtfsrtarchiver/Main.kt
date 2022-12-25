@@ -80,7 +80,7 @@ class Archiver : Runnable {
                     val job = newJob(FeedArchiveJob::class.java).withIdentity(feed.feed, feed.producer)
                         .usingJobData(jobDataMap).build()
 
-                    scheduler.listenerManager.addJobListener(JobFailureListener(), KeyMatcher.keyEquals(job.key))
+                    scheduler.listenerManager.addJobListener(JobFailureListener(job.key), KeyMatcher.keyEquals(job.key))
 
                     val trigger = newTrigger().withIdentity(feed.feed, feed.producer).startNow().withSchedule(
                         simpleSchedule().withIntervalInSeconds(fetchInterval).repeatForever()

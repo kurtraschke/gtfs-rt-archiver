@@ -20,12 +20,12 @@ private const val MAX_PAUSE_DURATION = 900
 private val RESET_PAUSE_AFTER = 6.hours
 private val MAX_PAUSE_COUNT = log(MAX_PAUSE_DURATION / PAUSE_PERIOD.toDouble(), PAUSE_ESCALATION)
 
-class JobFailureListener : JobListenerSupport() {
+class JobFailureListener(private val key: JobKey) : JobListenerSupport() {
     private var consecutiveFailureCount = 0
     private var pauseCount = 0
     private var lastFailure: Instant? = null
 
-    override fun getName(): String = "JobFailureListener"
+    override fun getName(): String = "JobFailureListener for ${this.key}"
 
     override fun jobWasExecuted(context: JobExecutionContext, jobException: JobExecutionException?) {
         val threwException = jobException != null
