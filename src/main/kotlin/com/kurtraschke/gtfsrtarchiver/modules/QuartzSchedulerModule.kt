@@ -24,6 +24,6 @@ class QuartzSchedulerProvider : Provider<Scheduler> {
         scheduler.listenerManager.addSchedulerListener(SchedulerShutdownListener())
         scheduler.setJobFactory(jobFactory)
 
-        return scheduler;
+        return scheduler
     }
 }
