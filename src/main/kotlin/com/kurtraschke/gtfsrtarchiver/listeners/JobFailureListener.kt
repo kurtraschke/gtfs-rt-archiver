@@ -2,23 +2,23 @@ package com.kurtraschke.gtfsrtarchiver.listeners
 
 import com.kurtraschke.gtfsrtarchiver.entities.FeedContents
 import com.kurtraschke.gtfsrtarchiver.jobs.JobUnpauserJob
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.quartz.*
 import org.quartz.DateBuilder.IntervalUnit.SECOND
 import org.quartz.DateBuilder.futureDate
 import org.quartz.listeners.JobListenerSupport
-import java.time.Duration
-import java.time.Instant
-import kotlin.math.log
+import kotlin.math.ceil
 import kotlin.math.pow
+import kotlin.random.Random
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.toKotlinDuration
+import kotlin.time.Duration.Companion.seconds
 
 private const val MAX_CONSECUTIVE_FAILURES = 3
-private const val PAUSE_PERIOD = 30
-private const val PAUSE_ESCALATION = 1.25
-private const val MAX_PAUSE_DURATION = 900
+private val PAUSE_PERIOD = 30.seconds
+private const val PAUSE_ESCALATION = 2.0
+private val MAX_PAUSE_DURATION = 1.hours
 private val RESET_PAUSE_AFTER = 6.hours
-private val MAX_PAUSE_COUNT = log(MAX_PAUSE_DURATION / PAUSE_PERIOD.toDouble(), PAUSE_ESCALATION)
 
 class JobFailureListener(private val key: JobKey) : JobListenerSupport() {
     private var consecutiveFailureCount = 0
@@ -36,12 +36,17 @@ class JobFailureListener(private val key: JobKey) : JobListenerSupport() {
 
         if (threwException || reportedError) {
             consecutiveFailureCount++
+            lastFailure = Clock.System.now()
 
             if (consecutiveFailureCount >= MAX_CONSECUTIVE_FAILURES) {
                 consecutiveFailureCount = 0
                 pauseCount++
 
-                val pauseDuration: Int = (PAUSE_ESCALATION.pow(pauseCount.toDouble().coerceAtMost(MAX_PAUSE_COUNT)) * PAUSE_PERIOD).toInt()
+                var pauseDuration: kotlin.time.Duration = (PAUSE_PERIOD * PAUSE_ESCALATION.pow(pauseCount))
+
+                pauseDuration = jitter(pauseDuration, 0.5)
+                pauseDuration = roundDuration(pauseDuration, 15.seconds)
+                pauseDuration = pauseDuration.coerceAtMost(MAX_PAUSE_DURATION)
 
                 log.warn(
                     "Pausing execution of job {} for {} seconds due to consecutive failure count exceeding {}",
@@ -56,16 +61,22 @@ class JobFailureListener(private val key: JobKey) : JobListenerSupport() {
 
                 val unpauseJob = JobBuilder.newJob(JobUnpauserJob::class.java).setJobData(jobDataMap).build()
 
-                val unpauseTrigger = TriggerBuilder.newTrigger().startAt(futureDate(pauseDuration, SECOND)).build()
+                val unpauseTrigger =
+                    TriggerBuilder.newTrigger().startAt(futureDate(pauseDuration.inWholeSeconds.toInt(), SECOND))
+                        .build()
 
                 scheduler.scheduleJob(unpauseJob, unpauseTrigger)
             }
         } else {
             consecutiveFailureCount = 0
 
-            if (lastFailure != null) {
-                if (Duration.between(lastFailure, Instant.now()).abs().toKotlinDuration() >= RESET_PAUSE_AFTER) {
-                    log.info("Resetting pause time for job {} as the last failure was at least {} ago", jobKey, RESET_PAUSE_AFTER)
+            lastFailure?.let {
+                if ((it - Clock.System.now()).absoluteValue >= RESET_PAUSE_AFTER) {
+                    log.info(
+                        "Resetting pause count for job {} as the last failure was at least {} ago",
+                        jobKey,
+                        RESET_PAUSE_AFTER
+                    )
                     pauseCount = 0
                 }
             }
@@ -73,3 +84,14 @@ class JobFailureListener(private val key: JobKey) : JobListenerSupport() {
     }
 }
 
+fun roundDuration(duration: kotlin.time.Duration, interval: kotlin.time.Duration): kotlin.time.Duration {
+    return interval * ceil(duration / interval)
+}
+
+fun jitter(duration: kotlin.time.Duration, jitterFactor: Double): kotlin.time.Duration {
+    require(jitterFactor in 0.0..1.0)
+    val basePiece = duration * (1.0 - jitterFactor)
+    val jitterable = duration * jitterFactor
+    val withJitter = jitterable * Random.nextDouble()
+    return basePiece + withJitter
+}
