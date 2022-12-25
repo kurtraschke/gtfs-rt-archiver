@@ -11,6 +11,7 @@ import com.kurtraschke.gtfsrtarchiver.listeners.schedulerShutdownLatch
 import com.kurtraschke.gtfsrtarchiver.listeners.schedulerStarted
 import com.kurtraschke.gtfsrtarchiver.modules.FeedFetcherModule
 import com.kurtraschke.gtfsrtarchiver.modules.OkHttpClientModule
+import com.kurtraschke.gtfsrtarchiver.modules.ProjectVersionModule
 import com.kurtraschke.gtfsrtarchiver.modules.QuartzSchedulerModule
 import dev.misfitlabs.kotlinguice4.getInstance
 import org.hibernate.cfg.Environment
@@ -127,7 +128,11 @@ fun main(args: Array<String>) {
 
 class GuiceFactory : IFactory {
     private val injector = Guice.createInjector(
-        OkHttpClientModule(), QuartzSchedulerModule(), FeedFetcherModule(), JpaPersistModule("archiverUnit")
+        ProjectVersionModule(),
+        OkHttpClientModule(),
+        QuartzSchedulerModule(),
+        JpaPersistModule("archiverUnit"),
+        FeedFetcherModule()
     )
 
     override fun <K> create(aClass: Class<K>): K {
