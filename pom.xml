@@ -352,7 +352,7 @@
         <dependency>
             <groupId>com.vladmihalcea</groupId>
             <artifactId>hibernate-types-55</artifactId>
-            <version>2.20.0</version>
+            <version>2.21.1</version>
         </dependency>
 
         <!-- jackson, including guava and protobuf -->
