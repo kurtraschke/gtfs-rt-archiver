@@ -183,8 +183,7 @@ open class DefaultFeedFetcher : FeedFetcher {
                             } else {
                                 FetchResult(
                                     VALID, responseTimeMillis, null, statusCode, statusMessage, protocol,
-                                    responseHeaders,
-                                    responseBodyBytes, feedMessage, responseContents
+                                    responseHeaders, responseBodyBytes, feedMessage, responseContents
                                 )
                             }
                         } catch (e: InvalidProtocolBufferException) {
@@ -231,6 +230,7 @@ open class DefaultFeedFetcher : FeedFetcher {
 
                 fc
             }
+
             NOT_MODIFIED, UNCHANGED -> {
                 log.debug("Not storing feed; status: {}", fr.fetchState)
                 null

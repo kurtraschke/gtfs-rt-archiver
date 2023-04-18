@@ -11,6 +11,7 @@ import org.quartz.listeners.JobListenerSupport
 import kotlin.math.ceil
 import kotlin.math.pow
 import kotlin.random.Random
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
@@ -42,18 +43,19 @@ class JobFailureListener(private val key: JobKey) : JobListenerSupport() {
                 consecutiveFailureCount = 0
                 pauseCount++
 
-                var pauseDuration: kotlin.time.Duration = (PAUSE_PERIOD * PAUSE_ESCALATION.pow(pauseCount))
+                var pauseDuration = (PAUSE_PERIOD * PAUSE_ESCALATION.pow(pauseCount))
 
-                pauseDuration = jitter(pauseDuration, 0.5)
+                pauseDuration = jitter(pauseDuration, 0.1)
                 pauseDuration = roundDuration(pauseDuration, 15.seconds)
                 pauseDuration = pauseDuration.coerceAtMost(MAX_PAUSE_DURATION)
 
                 log.warn(
-                    "Pausing execution of job {} for {} seconds due to consecutive failure count exceeding {}",
+                    "Pausing execution of job {} for {} due to consecutive failure count exceeding {}",
                     jobKey,
                     pauseDuration,
                     MAX_CONSECUTIVE_FAILURES
                 )
+
                 scheduler.pauseJob(jobKey)
 
                 val jobDataMap = JobDataMap()
@@ -84,11 +86,11 @@ class JobFailureListener(private val key: JobKey) : JobListenerSupport() {
     }
 }
 
-fun roundDuration(duration: kotlin.time.Duration, interval: kotlin.time.Duration): kotlin.time.Duration {
+fun roundDuration(duration: Duration, interval: Duration): Duration {
     return interval * ceil(duration / interval)
 }
 
-fun jitter(duration: kotlin.time.Duration, jitterFactor: Double): kotlin.time.Duration {
+fun jitter(duration: Duration, jitterFactor: Double): Duration {
     require(jitterFactor in 0.0..1.0)
     val basePiece = duration * (1.0 - jitterFactor)
     val jitterable = duration * jitterFactor
