@@ -9,11 +9,13 @@ on:
   pull_request:
     branches: [ "main" ]
 
+concurrency:
+  group: environment-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 17
