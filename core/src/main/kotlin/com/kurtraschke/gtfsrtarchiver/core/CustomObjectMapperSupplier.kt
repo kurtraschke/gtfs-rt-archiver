@@ -1,4 +1,4 @@
-package com.kurtraschke.gtfsrtarchiver.archiver
+package com.kurtraschke.gtfsrtarchiver.core
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.guava.GuavaModule
