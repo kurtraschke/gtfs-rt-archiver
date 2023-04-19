@@ -234,6 +234,8 @@ class GtfsRtArchiverApi : Callable<Int> {
                         aos.write(protobufBytes)
 
                         aos.closeArchiveEntry()
+
+                        em.detach(feedContents)
                     }
                     aos.finish()
                 }
