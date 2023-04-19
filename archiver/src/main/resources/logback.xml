@@ -1,0 +1,23 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT-MDC" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %logger{36} - %X{producer} %X{feed} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.kurtraschke.gtfsrtarchiver.archiver" level="INFO"/>
+
+    <logger name="com.kurtraschke.gtfsrtarchiver.archiver.DefaultFeedFetcher" level="DEBUG" additivity="false">
+        <appender-ref ref="STDOUT-MDC"/>
+    </logger>
+
+    <root level="WARN">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
