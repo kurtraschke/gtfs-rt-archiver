@@ -280,7 +280,7 @@
                 <plugin>
                     <groupId>io.github.zlika</groupId>
                     <artifactId>reproducible-build-maven-plugin</artifactId>
-                    <version>0.11</version>
+                    <version>0.16</version>
                 </plugin>
             </plugins>
         </pluginManagement>
