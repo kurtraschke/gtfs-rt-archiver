@@ -6,7 +6,9 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="gtfs-rt-archiver" />
+        <module name="core" />
+        <module name="archiver" />
+        <module name="api" />
       </profile>
     </annotationProcessing>
   </component>
