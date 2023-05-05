@@ -1,9 +1,9 @@
 package com.kurtraschke.gtfsrtarchiver.archiver.listeners
 
-import com.kurtraschke.gtfsrtarchiver.core.entities.FeedContents
 import com.kurtraschke.gtfsrtarchiver.archiver.jobs.JobUnpauserJob
-import kotlinx.datetime.Clock
+import com.kurtraschke.gtfsrtarchiver.core.entities.FeedContents
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toKotlinInstant
 import org.quartz.*
 import org.quartz.DateBuilder.IntervalUnit.SECOND
 import org.quartz.DateBuilder.futureDate
@@ -35,9 +35,11 @@ class JobFailureListener(private val key: JobKey) : JobListenerSupport() {
         val scheduler = context.scheduler
         val jobKey = context.jobDetail.key
 
+        val fireTime = context.fireTime.toInstant().toKotlinInstant()
+
         if (threwException || reportedError) {
             consecutiveFailureCount++
-            lastFailure = Clock.System.now()
+            lastFailure = fireTime
 
             if (consecutiveFailureCount >= MAX_CONSECUTIVE_FAILURES) {
                 consecutiveFailureCount = 0
@@ -73,13 +75,14 @@ class JobFailureListener(private val key: JobKey) : JobListenerSupport() {
             consecutiveFailureCount = 0
 
             lastFailure?.let {
-                if ((it - Clock.System.now()).absoluteValue >= RESET_PAUSE_AFTER) {
+                if ((it - fireTime).absoluteValue >= RESET_PAUSE_AFTER) {
                     log.info(
                         "Resetting pause count for job {} as the last failure was at least {} ago",
                         jobKey,
                         RESET_PAUSE_AFTER
                     )
                     pauseCount = 0
+                    lastFailure = null
                 }
             }
         }
