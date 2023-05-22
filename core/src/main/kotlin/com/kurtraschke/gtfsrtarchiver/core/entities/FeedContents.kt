@@ -5,13 +5,11 @@ import com.google.common.collect.ListMultimap
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import okhttp3.Protocol
 import org.hibernate.annotations.Type
-import org.hibernate.annotations.TypeDef
 import java.time.Instant
-import javax.persistence.*
+import jakarta.persistence.*
 
 @Entity
 @Table(name = "feed_contents")
-@TypeDef(name = "json", typeClass = JsonType::class)
 @IdClass(FeedContentsKey::class)
 data class FeedContents(
     @Id @Column(columnDefinition = "text") var producer: String,
@@ -30,7 +28,7 @@ data class FeedContents(
 
     @Enumerated(EnumType.STRING) @Column(columnDefinition = "text") var protocol: Protocol?,
 
-    @Type(type = "json") @Column(columnDefinition = "jsonb") var responseHeaders: ListMultimap<String, String>?,
+    @Type(JsonType::class) @Column(columnDefinition = "jsonb") var responseHeaders: ListMultimap<String, String>?,
 
     var responseTimeMillis: Int?
 ) {
@@ -38,7 +36,7 @@ data class FeedContents(
 
     var responseBodyLength: Int? = 0
 
-    @Type(type = "json")
+    @Type(JsonType::class)
     @Column(columnDefinition = "jsonb")
     var responseContents: JsonNode? = null
 

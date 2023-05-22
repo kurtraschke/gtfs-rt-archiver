@@ -24,9 +24,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.time.Instant
-import javax.inject.Provider
-import javax.persistence.EntityManager
-import javax.persistence.NoResultException
+import jakarta.inject.Provider
+import jakarta.persistence.EntityManager
+import jakarta.persistence.NoResultException
 
 interface FeedFetcher {
     fun fetchFeed(

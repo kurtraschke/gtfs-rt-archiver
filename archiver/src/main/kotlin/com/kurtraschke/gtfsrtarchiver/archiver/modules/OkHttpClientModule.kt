@@ -1,15 +1,15 @@
 package com.kurtraschke.gtfsrtarchiver.archiver.modules
 
+import com.google.inject.AbstractModule
 import com.google.inject.Inject
 import com.google.inject.Provider
-import com.google.inject.Singleton
 import com.google.inject.name.Named
-import dev.misfitlabs.kotlinguice4.KotlinModule
+import jakarta.inject.Singleton
 import okhttp3.OkHttpClient
 
-class OkHttpClientModule : KotlinModule() {
+class OkHttpClientModule : AbstractModule() {
     override fun configure() {
-        bind<OkHttpClient>().toProvider<OkHttpClientProvider>().`in`<Singleton>()
+        bind(OkHttpClient::class.java).toProvider(OkHttpClientProvider::class.java).`in`(Singleton::class.java)
     }
 }
 

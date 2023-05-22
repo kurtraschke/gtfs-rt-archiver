@@ -2,7 +2,7 @@ package com.kurtraschke.gtfsrtarchiver.core.entities
 
 import org.hibernate.annotations.Immutable
 import java.time.Instant
-import javax.persistence.*
+import jakarta.persistence.*
 
 @Entity
 @Table(name = "v_feed_stats")

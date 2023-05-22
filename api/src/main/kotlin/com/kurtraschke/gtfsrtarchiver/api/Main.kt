@@ -18,6 +18,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
 import org.hibernate.cfg.Environment
+import org.slf4j.bridge.SLF4JBridgeHandler
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
@@ -26,10 +27,10 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.Callable
 import java.util.concurrent.CountDownLatch
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
-import javax.persistence.NoResultException
-import javax.persistence.Persistence
+import jakarta.persistence.EntityManager
+import jakarta.persistence.EntityManagerFactory
+import jakarta.persistence.NoResultException
+import jakarta.persistence.Persistence
 import kotlin.system.exitProcess
 import kotlin.time.Duration
 
@@ -48,6 +49,9 @@ class GtfsRtArchiverApi : Callable<Int> {
     lateinit var databaseUrl: String
 
     override fun call(): Int {
+        SLF4JBridgeHandler.removeHandlersForRootLogger()
+        SLF4JBridgeHandler.install()
+
         System.setProperty(Environment.URL, databaseUrl)
 
         val app = Javalin.create()
@@ -180,6 +184,7 @@ class GtfsRtArchiverApi : Callable<Int> {
                     ctx.header("Content-Disposition", "attachment; filename=\"$filename\"")
                     ctx.result(mapper.treeToValue(feedContents.responseContents, FeedMessage::class.java).toByteArray())
                 }
+
                 "pbtext" -> {
                     ctx.contentType(ContentType.TEXT_PLAIN)
                     ctx.result(mapper.treeToValue(feedContents.responseContents, FeedMessage::class.java).toString())
@@ -208,7 +213,6 @@ class GtfsRtArchiverApi : Callable<Int> {
                 builder.equal(root.get(FeedContents_.feed), feed),
                 builder.between(root.get(FeedContents_.fetchTime), start.toJavaInstant(), end.toJavaInstant())
             )
-            criteria.orderBy(builder.asc(root.get(FeedContents_.fetchTime)))
 
             val q = em.createQuery(criteria)
             val os = ctx.outputStream()

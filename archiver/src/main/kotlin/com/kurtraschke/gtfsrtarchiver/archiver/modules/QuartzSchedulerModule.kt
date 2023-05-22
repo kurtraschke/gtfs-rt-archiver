@@ -1,17 +1,17 @@
 package com.kurtraschke.gtfsrtarchiver.archiver.modules
 
+import com.google.inject.AbstractModule
 import com.kurtraschke.gtfsrtarchiver.archiver.GuiceJobFactory
 import com.kurtraschke.gtfsrtarchiver.archiver.listeners.SchedulerShutdownListener
-import dev.misfitlabs.kotlinguice4.KotlinModule
+import jakarta.inject.Inject
+import jakarta.inject.Provider
+import jakarta.inject.Singleton
 import org.quartz.Scheduler
 import org.quartz.impl.StdSchedulerFactory
-import javax.inject.Inject
-import javax.inject.Provider
-import javax.inject.Singleton
 
-class QuartzSchedulerModule : KotlinModule() {
+class QuartzSchedulerModule : AbstractModule() {
     override fun configure() {
-        bind<Scheduler>().toProvider<QuartzSchedulerProvider>().`in`<Singleton>()
+        bind(Scheduler::class.java).toProvider(QuartzSchedulerProvider::class.java).`in`(Singleton::class.java)
     }
 }
 

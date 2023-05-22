@@ -27,7 +27,7 @@ import org.slf4j.MDC
 import picocli.CommandLine
 import picocli.CommandLine.*
 import java.nio.file.Path
-import javax.inject.Inject
+import jakarta.inject.Inject
 import kotlin.system.exitProcess
 
 

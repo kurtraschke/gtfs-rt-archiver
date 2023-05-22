@@ -4,6 +4,4 @@
 
 * Duration validation
 
-* Other archive formats?
-
-* Upgrade to Hibernate 6, apply lessons learned to the archiver?
+ * Other archive formats?
