@@ -24,20 +24,17 @@ class ArchiverIT {
             [[feeds]]
             producer = "MBTA"
             feed = "TU"
-            feedUrl = "http://cdn.mbta.com/realtime/TripUpdates.pb"
-            ignoreSSLErrors = true
+            feedUrl = "http://localhost:8080/realtime/TripUpdates.pb"
             
             [[feeds]]
             producer = "MBTA"
             feed = "VP"
-            feedUrl = "http://cdn.mbta.com/realtime/VehiclePositions.pb"
-            ignoreSSLErrors = true
+            feedUrl = "http://localhost:8080/realtime/VehiclePositions.pb"
             
             [[feeds]]
             producer = "MBTA"
             feed = "Alerts"
-            feedUrl = "http://cdn.mbta.com/realtime/Alerts.pb"
-            ignoreSSLErrors = true
+            feedUrl = "http://localhost:8080/realtime/Alerts.pb"
         """.trimIndent()
 
         tempConfigFile.writeText(testConfiguration)
@@ -54,7 +51,7 @@ class ArchiverIT {
         @JvmField
         @RegisterExtension
         var wm: WireMockExtension = WireMockExtension.newInstance()
-            .options(wireMockConfig().port(80).httpsPort(443))
+            .options(wireMockConfig().port(8080))
             .proxyMode(true)
             .build()
     }
