@@ -223,11 +223,6 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>3.1.0</version>
-                    <configuration>
-                        <mainClass>
-                            ${mainClass}
-                        </mainClass>
-                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>com.google.cloud.tools</groupId>
