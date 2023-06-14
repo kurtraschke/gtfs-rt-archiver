@@ -39,9 +39,10 @@
         <kotlin.code.style>official</kotlin.code.style>
         <kotlin.compiler.jvmTarget>17</kotlin.compiler.jvmTarget>
         <kotlin.version>1.8.21</kotlin.version>
-        <hibernate.version>6.2.3.Final</hibernate.version>
-        <picocli.version>4.7.3</picocli.version>
+        <hibernate.version>6.2.4.Final</hibernate.version>
+        <picocli.version>4.7.4</picocli.version>
         <slf4j.version>2.0.7</slf4j.version>
+        <testcontainers.version>1.18.3</testcontainers.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
@@ -216,7 +217,7 @@
                 <plugin>
                     <groupId>io.github.git-commit-id</groupId>
                     <artifactId>git-commit-id-maven-plugin</artifactId>
-                    <version>5.0.0</version>
+                    <version>6.0.0</version>
                 </plugin>
 
                 <plugin>
@@ -268,7 +269,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>2.15.1</version>
+                <version>2.15.2</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -290,14 +291,14 @@
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>junit-jupiter</artifactId>
-                <version>1.18.1</version>
+                <version>${testcontainers.version}</version>
                 <scope>test</scope>
             </dependency>
 
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>postgresql</artifactId>
-                <version>1.18.1</version>
+                <version>${testcontainers.version}</version>
                 <scope>test</scope>
             </dependency>
 
@@ -354,7 +355,7 @@
             <dependency>
                 <groupId>io.hypersistence</groupId>
                 <artifactId>hypersistence-utils-hibernate-62</artifactId>
-                <version>3.3.2</version>
+                <version>3.4.3</version>
             </dependency>
 
             <!-- jackson, including guava and protobuf -->
@@ -384,7 +385,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>31.1-jre</version>
+                <version>32.0.1-jre</version>
             </dependency>
 
             <!-- guice -->
@@ -420,7 +421,7 @@
             <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.4.7</version>
+                <version>1.4.8</version>
                 <scope>runtime</scope>
             </dependency>
 
@@ -444,9 +445,8 @@
             <dependency>
                 <groupId>io.javalin</groupId>
                 <artifactId>javalin</artifactId>
-                <version>5.5.0</version>
+                <version>5.6.0</version>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 
