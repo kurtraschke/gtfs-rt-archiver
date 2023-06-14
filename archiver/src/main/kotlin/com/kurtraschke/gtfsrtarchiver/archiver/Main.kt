@@ -14,6 +14,7 @@ import com.kurtraschke.gtfsrtarchiver.archiver.modules.OkHttpClientModule
 import com.kurtraschke.gtfsrtarchiver.archiver.modules.ProjectVersionModule
 import com.kurtraschke.gtfsrtarchiver.archiver.modules.QuartzSchedulerModule
 import dev.misfitlabs.kotlinguice4.getInstance
+import jakarta.inject.Inject
 import org.hibernate.cfg.Environment
 import org.quartz.JobBuilder.newJob
 import org.quartz.JobDataMap
@@ -27,7 +28,6 @@ import org.slf4j.MDC
 import picocli.CommandLine
 import picocli.CommandLine.*
 import java.nio.file.Path
-import jakarta.inject.Inject
 import kotlin.system.exitProcess
 
 

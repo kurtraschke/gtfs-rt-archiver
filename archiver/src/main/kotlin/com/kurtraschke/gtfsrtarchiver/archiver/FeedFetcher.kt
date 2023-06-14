@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.ImmutableListMultimap
 import com.google.common.collect.ListMultimap
 import com.google.common.collect.Streams
-import com.google.inject.Inject
 import com.google.inject.persist.Transactional
 import com.google.protobuf.ExtensionRegistry
 import com.google.protobuf.InvalidProtocolBufferException
@@ -18,15 +17,16 @@ import com.kurtraschke.gtfsrtarchiver.core.GtfsRealtimeExtensions
 import com.kurtraschke.gtfsrtarchiver.core.entities.FeedContents
 import com.kurtraschke.gtfsrtarchiver.core.entities.FeedStats
 import com.kurtraschke.gtfsrtarchiver.core.entities.FeedStats_
+import jakarta.inject.Inject
+import jakarta.inject.Provider
+import jakarta.persistence.EntityManager
+import jakarta.persistence.NoResultException
 import okhttp3.*
 import okhttp3.Headers.Companion.toHeaders
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.time.Instant
-import jakarta.inject.Provider
-import jakarta.persistence.EntityManager
-import jakarta.persistence.NoResultException
 
 interface FeedFetcher {
     fun fetchFeed(

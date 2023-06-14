@@ -1,12 +1,12 @@
 package com.kurtraschke.gtfsrtarchiver.archiver.modules
 
+import com.google.inject.AbstractModule
 import com.kurtraschke.gtfsrtarchiver.archiver.DefaultFeedFetcher
 import com.kurtraschke.gtfsrtarchiver.archiver.FeedFetcher
-import dev.misfitlabs.kotlinguice4.KotlinModule
 import jakarta.inject.Singleton
 
-class FeedFetcherModule : KotlinModule() {
+class FeedFetcherModule : AbstractModule() {
     override fun configure() {
-        bind<FeedFetcher>().to<DefaultFeedFetcher>().`in`<Singleton>()
+        bind(FeedFetcher::class.java).to(DefaultFeedFetcher::class.java).`in`(Singleton::class.java)
     }
 }

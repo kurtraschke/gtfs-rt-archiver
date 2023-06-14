@@ -1,9 +1,9 @@
 package com.kurtraschke.gtfsrtarchiver.archiver.modules
 
 import com.google.inject.AbstractModule
-import com.google.inject.Inject
-import com.google.inject.Provider
-import com.google.inject.name.Named
+import jakarta.inject.Inject
+import jakarta.inject.Named
+import jakarta.inject.Provider
 import jakarta.inject.Singleton
 import okhttp3.OkHttpClient
 

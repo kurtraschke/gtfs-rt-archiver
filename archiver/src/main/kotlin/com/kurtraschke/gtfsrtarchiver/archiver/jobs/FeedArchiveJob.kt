@@ -1,8 +1,8 @@
 package com.kurtraschke.gtfsrtarchiver.archiver.jobs
 
-import com.google.inject.Inject
 import com.kurtraschke.gtfsrtarchiver.archiver.Configuration
 import com.kurtraschke.gtfsrtarchiver.archiver.FeedFetcher
+import jakarta.inject.Inject
 import org.quartz.DisallowConcurrentExecution
 import org.quartz.Job
 import org.quartz.JobExecutionContext

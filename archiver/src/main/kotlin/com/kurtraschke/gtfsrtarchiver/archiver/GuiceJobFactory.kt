@@ -1,11 +1,11 @@
 package com.kurtraschke.gtfsrtarchiver.archiver
 
 import com.google.inject.Injector
+import jakarta.inject.Inject
 import org.quartz.Job
 import org.quartz.Scheduler
 import org.quartz.simpl.PropertySettingJobFactory
 import org.quartz.spi.TriggerFiredBundle
-import jakarta.inject.Inject
 
 
 class GuiceJobFactory : PropertySettingJobFactory() {
