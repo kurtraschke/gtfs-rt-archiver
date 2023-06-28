@@ -404,7 +404,7 @@
             <dependency>
                 <groupId>dev.misfitlabs.kotlinguice4</groupId>
                 <artifactId>kotlin-guice</artifactId>
-                <version>1.6.0</version>
+                <version>3.0.0</version>
             </dependency>
 
             <!-- slf4j -->
