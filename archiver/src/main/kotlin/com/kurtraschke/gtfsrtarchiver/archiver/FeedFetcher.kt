@@ -123,9 +123,18 @@ open class DefaultFeedFetcher : FeedFetcher {
 
         val conditionalGet = feedStats?.etag != null || feedStats?.lastModified != null
 
-        feedStats?.let {
-            it.etag?.let { headersBuilder.set("If-None-Match", it) }
-            it.lastModified?.let { headersBuilder.set("If-Modified-Since", it) }
+        feedStats?.also {
+
+            it.etag?.also {
+                headersBuilder["If-None-Match"] = it
+            }
+
+            it.lastModified?.also {
+                if (it <= fetchTime) {
+                    headersBuilder["If-Modified-Since"] = it
+                }
+            }
+
         }
 
         val request = Request.Builder()
@@ -179,7 +188,10 @@ open class DefaultFeedFetcher : FeedFetcher {
                                 responseBodyBytes, feed.extensions.orEmpty()
                             )
 
-                            if ((feedStats != null) && (Instant.ofEpochSecond(feedMessage.header.timestamp) <= feedStats.gtfsRtHeaderTimestamp)) {
+                            if (feedStats != null &&
+                                (feedStats.gtfsRtHeaderTimestamp <= fetchTime
+                                        && Instant.ofEpochSecond(feedMessage.header.timestamp) <= feedStats.gtfsRtHeaderTimestamp)
+                            ) {
                                 FetchResult(UNCHANGED)
                             } else {
                                 FetchResult(
