@@ -17,7 +17,9 @@
         <appender-ref ref="STDOUT-MDC"/>
     </logger>
 
-    <root level="WARN">
+    <logger name="com.hubspot.jackson.datatype.protobuf.PropertyNamingStrategyWrapper" level="ERROR" />
+
+    <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>

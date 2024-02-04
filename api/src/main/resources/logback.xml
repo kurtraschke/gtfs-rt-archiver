@@ -11,5 +11,7 @@
 
     <logger name="org.postgresql" level="INFO" />
 
+    <logger name="com.hubspot.jackson.datatype.protobuf.PropertyNamingStrategyWrapper" level="ERROR" />
+
     <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
 </configuration>
