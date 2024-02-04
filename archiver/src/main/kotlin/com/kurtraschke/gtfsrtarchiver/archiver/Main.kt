@@ -25,6 +25,7 @@ import org.quartz.impl.matchers.KeyMatcher
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
+import org.slf4j.bridge.SLF4JBridgeHandler
 import picocli.CommandLine
 import picocli.CommandLine.*
 import java.nio.file.Path
@@ -54,6 +55,9 @@ class Archiver : Runnable {
 
     override fun run() {
         try {
+            SLF4JBridgeHandler.removeHandlersForRootLogger()
+            SLF4JBridgeHandler.install()
+
             val configuration = parseConfiguration(configurationFile)
 
             System.setProperty(Environment.URL, configuration.databaseUrl)
