@@ -159,7 +159,11 @@
         </dependency>
         <dependency>
             <groupId>org.hibernate.orm</groupId>
-            <artifactId>hibernate-hikaricp</artifactId>
+            <artifactId>hibernate-agroal</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.agroal</groupId>
+            <artifactId>agroal-pool</artifactId>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -170,7 +174,7 @@
 
         <dependency>
             <groupId>io.hypersistence</groupId>
-            <artifactId>hypersistence-utils-hibernate-62</artifactId>
+            <artifactId>hypersistence-utils-hibernate-63</artifactId>
         </dependency>
 
         <!-- jackson, including guava and protobuf -->

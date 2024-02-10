@@ -2,9 +2,8 @@ package com.kurtraschke.gtfsrtarchiver.archiver
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.common.collect.ImmutableListMultimap
+import com.google.common.collect.ImmutableListMultimap.flatteningToImmutableListMultimap
 import com.google.common.collect.ListMultimap
-import com.google.common.collect.Streams
 import com.google.inject.persist.Transactional
 import com.google.protobuf.ExtensionRegistry
 import com.google.protobuf.InvalidProtocolBufferException
@@ -26,6 +25,7 @@ import okhttp3.Headers.Companion.toHeaders
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.IOException
+import java.net.HttpURLConnection.HTTP_NOT_MODIFIED
 import java.time.Instant
 
 interface FeedFetcher {
@@ -114,7 +114,7 @@ open class DefaultFeedFetcher : FeedFetcher {
         val feedStats = getFeedStats(em, feed)
 
         val fetchTime = Instant.now()
-        log.debug("Beginning fetch at $fetchTime")
+        log.debug("Beginning fetch at {}", fetchTime)
 
         val feedUrlBuilder = feed.feedUrl.newBuilder()
         feed.queryParameters.orEmpty().forEach(feedUrlBuilder::addQueryParameter)
@@ -161,9 +161,9 @@ open class DefaultFeedFetcher : FeedFetcher {
             }
         }.build()
 
-        val fr: FetchResult = try {
+        val fr = try {
             customizedClient.newCall(request).execute().use { response ->
-                if (conditionalGet && response.code == 304) {
+                if (conditionalGet && response.code == HTTP_NOT_MODIFIED) {
                     FetchResult(NOT_MODIFIED)
                 } else {
                     val isError = !response.isSuccessful
@@ -172,12 +172,12 @@ open class DefaultFeedFetcher : FeedFetcher {
                     val statusMessage = response.message
                     val protocol = response.protocol
 
-                    //Lower-case HTTP header keys for consistency
-                    val responseHeaders = Streams.stream(response.headers).collect(
-                        ImmutableListMultimap.toImmutableListMultimap(
-                            { p -> p.first.lowercase() }, Pair<String, String>::second
-                        )
-                    )
+                    val responseHeaders = response
+                        .headers
+                        .toMultimap()
+                        .entries
+                        .stream()
+                        .collect(flatteningToImmutableListMultimap({ it.key }, { it.value.stream() }))
 
                     val responseTimeMillis = (response.receivedResponseAtMillis - response.sentRequestAtMillis).toInt()
                     val responseBodyBytes = response.body!!.bytes()

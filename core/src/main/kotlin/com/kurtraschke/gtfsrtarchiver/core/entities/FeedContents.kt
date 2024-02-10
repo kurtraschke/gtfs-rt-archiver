@@ -1,5 +1,6 @@
 package com.kurtraschke.gtfsrtarchiver.core.entities
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.databind.JsonNode
 import com.google.common.collect.ListMultimap
 import io.hypersistence.utils.hibernate.type.json.JsonType
@@ -41,6 +42,8 @@ data class FeedContents(
     var responseContents: JsonNode? = null
 
     @Suppress("unused")
+    @get:JsonIgnore
+    @set:JsonIgnore
     var id: FeedContentsKey
         get() = FeedContentsKey(
             producer, feed, fetchTime

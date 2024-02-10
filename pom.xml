@@ -39,10 +39,10 @@
         <kotlin.code.style>official</kotlin.code.style>
         <kotlin.compiler.jvmTarget>17</kotlin.compiler.jvmTarget>
         <kotlin.version>1.9.22</kotlin.version>
-        <hibernate.version>6.2.4.Final</hibernate.version>
+        <hibernate.version>6.4.3.Final</hibernate.version>
         <picocli.version>4.7.5</picocli.version>
         <slf4j.version>2.0.7</slf4j.version>
-        <testcontainers.version>1.19.3</testcontainers.version>
+        <testcontainers.version>1.19.5</testcontainers.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
@@ -143,12 +143,21 @@
                     <configuration>
                         <compilerPlugins>
                             <plugin>jpa</plugin>
+                            <plugin>all-open</plugin>
                         </compilerPlugins>
+                        <pluginOptions>
+                            <option>all-open:annotation=jakarta.persistence.Entity</option>
+                        </pluginOptions>
                     </configuration>
                     <dependencies>
                         <dependency>
                             <groupId>org.jetbrains.kotlin</groupId>
                             <artifactId>kotlin-maven-noarg</artifactId>
+                            <version>${kotlin.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.jetbrains.kotlin</groupId>
+                            <artifactId>kotlin-maven-allopen</artifactId>
                             <version>${kotlin.version}</version>
                         </dependency>
                     </dependencies>
@@ -224,6 +233,15 @@
                 </plugin>
 
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>3.3.1</version>
+                    <configuration>
+                        <propertiesEncoding>ISO-8859-1</propertiesEncoding>
+                    </configuration>
+                </plugin>
+
+                <plugin>
                     <groupId>io.github.git-commit-id</groupId>
                     <artifactId>git-commit-id-maven-plugin</artifactId>
                     <version>6.0.0</version>
@@ -240,7 +258,7 @@
                     <version>3.4.0</version>
                     <configuration>
                         <from>
-                            <image>amazoncorretto:17</image>
+                            <image>amazoncorretto:21</image>
                             <platforms>
                                 <platform>
                                     <architecture>amd64</architecture>
@@ -285,7 +303,7 @@
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
-                <version>5.10.1</version>
+                <version>5.10.2</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -350,8 +368,13 @@
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-hikaricp</artifactId>
+                <artifactId>hibernate-agroal</artifactId>
                 <version>${hibernate.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.agroal</groupId>
+                <artifactId>agroal-pool</artifactId>
+                <version>2.2</version>
             </dependency>
             <dependency>
                 <groupId>org.postgresql</groupId>
@@ -363,8 +386,8 @@
 
             <dependency>
                 <groupId>io.hypersistence</groupId>
-                <artifactId>hypersistence-utils-hibernate-62</artifactId>
-                <version>3.7.0</version>
+                <artifactId>hypersistence-utils-hibernate-63</artifactId>
+                <version>3.7.2</version>
             </dependency>
 
             <!-- jackson, including guava and protobuf -->
@@ -449,12 +472,18 @@
                 <version>1.25.0</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.github.luben</groupId>
+                <artifactId>zstd-jni</artifactId>
+                <version>1.5.5-11</version>
+            </dependency>
+
             <!-- javalin -->
 
             <dependency>
                 <groupId>io.javalin</groupId>
                 <artifactId>javalin</artifactId>
-                <version>5.6.3</version>
+                <version>6.0.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

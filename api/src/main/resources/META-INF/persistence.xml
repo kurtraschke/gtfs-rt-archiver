@@ -7,5 +7,15 @@
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <class>com.kurtraschke.gtfsrtarchiver.core.entities.FeedContents</class>
         <class>com.kurtraschke.gtfsrtarchiver.core.entities.FeedStats</class>
+        <properties>
+            <property name="hibernate.agroal.maxSize" value="10"/>
+            <property name="hibernate.physical_naming_strategy"
+                      value="io.hypersistence.utils.hibernate.naming.CamelCaseToSnakeCaseNamingStrategy"/>
+            <property name="hibernate.hbm2ddl.auto" value="none"/>
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.jdbc.time_zone" value="UTC"/>
+            <property name="hypersistence.utils.jackson.object.mapper"
+                      value="com.kurtraschke.gtfsrtarchiver.core.CustomObjectMapperSupplier"/>
+        </properties>
     </persistence-unit>
 </persistence>

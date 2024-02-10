@@ -1,7 +1,0 @@
-* Add support for specifying extensions
-
-* Add support for start/end vs. duration
-
-* Duration validation
-
- * Other archive formats?

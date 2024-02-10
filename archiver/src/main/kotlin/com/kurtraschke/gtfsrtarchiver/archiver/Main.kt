@@ -60,7 +60,7 @@ class Archiver : Runnable {
 
             val configuration = parseConfiguration(configurationFile)
 
-            System.setProperty(Environment.URL, configuration.databaseUrl)
+            System.setProperty(Environment.JAKARTA_JDBC_URL, configuration.databaseUrl)
 
             persistService.start()
 
@@ -82,14 +82,19 @@ class Archiver : Runnable {
                     jobDataMap["storeResponseBody"] = storeResponseBody
                     jobDataMap["storeResponseBodyOnError"] = storeResponseBodyOnError
 
-                    val job = newJob(FeedArchiveJob::class.java).withIdentity(feed.feed, feed.producer)
+                    val job = newJob(FeedArchiveJob::class.java)
+                        .withIdentity(feed.feed, feed.producer)
                         .usingJobData(jobDataMap).build()
 
                     scheduler.listenerManager.addJobListener(JobFailureListener(job.key), KeyMatcher.keyEquals(job.key))
 
-                    val trigger = newTrigger().withIdentity(feed.feed, feed.producer).startNow().withSchedule(
-                        simpleSchedule().withIntervalInSeconds(fetchInterval).repeatForever()
-                    ).build()
+                    val trigger = newTrigger()
+                        .withIdentity(feed.feed, feed.producer)
+                        .startNow()
+                        .withSchedule(
+                            simpleSchedule().withIntervalInSeconds(fetchInterval).repeatForever()
+                        )
+                        .build()
 
                     scheduler.scheduleJob(job, trigger)
                 }
@@ -109,6 +114,7 @@ class Archiver : Runnable {
                         fc?.let { log.info(it.toString()) }
                     } catch (e: Exception) {
                         log.error("Uncaught exception during feed fetch", e)
+                        throw e
                     } finally {
                         MDC.clear()
                     }

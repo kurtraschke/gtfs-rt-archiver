@@ -1,38 +1,29 @@
 package com.kurtraschke.gtfsrtarchiver.api
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.protobuf.ExtensionRegistry
-import com.google.transit.realtime.GtfsRealtime.FeedMessage
-import com.google.transit.realtime.GtfsRealtimeNYCT
-import com.hubspot.jackson.datatype.protobuf.ProtobufJacksonConfig
-import com.hubspot.jackson.datatype.protobuf.ProtobufModule
-import com.kurtraschke.gtfsrtarchiver.core.entities.FeedContents
-import com.kurtraschke.gtfsrtarchiver.core.entities.FeedContents_
+import com.fasterxml.jackson.datatype.guava.GuavaModule
+import com.kurtraschke.gtfsrtarchiver.core.GtfsRealtimeExtensions
 import io.javalin.Javalin
-import io.javalin.event.EventListener
-import io.javalin.http.ContentType
+import io.javalin.apibuilder.ApiBuilder.*
+import io.javalin.config.Key
 import io.javalin.http.Context
-import kotlinx.datetime.Clock
-import kotlinx.datetime.toJavaInstant
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
+import io.javalin.json.JavalinJackson
+import jakarta.persistence.EntityManager
+import jakarta.persistence.EntityManagerFactory
+import jakarta.persistence.NoResultException
+import jakarta.persistence.Persistence
+import kotlinx.datetime.Instant
 import org.hibernate.cfg.Environment
 import org.slf4j.bridge.SLF4JBridgeHandler
 import picocli.CommandLine
 import picocli.CommandLine.Command
 import picocli.CommandLine.Option
-import java.nio.file.attribute.FileTime
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 import java.util.concurrent.Callable
 import java.util.concurrent.CountDownLatch
-import jakarta.persistence.EntityManager
-import jakarta.persistence.EntityManagerFactory
-import jakarta.persistence.NoResultException
-import jakarta.persistence.Persistence
 import kotlin.system.exitProcess
 import kotlin.time.Duration
+
+val MAX_DURATION = Duration.parse("PT36H")
+val EntityManagerFactoryKey = Key<EntityManagerFactory>("entityManagerFactory")
 
 fun main(args: Array<String>): Unit = exitProcess(CommandLine(GtfsRtArchiverApi()).execute(*args))
 
@@ -48,211 +39,75 @@ class GtfsRtArchiverApi : Callable<Int> {
     @Option(names = ["-d", "--database"], required = true, defaultValue = "\${env:DATABASE_URL}")
     lateinit var databaseUrl: String
 
+
     override fun call(): Int {
         SLF4JBridgeHandler.removeHandlersForRootLogger()
         SLF4JBridgeHandler.install()
 
-        System.setProperty(Environment.URL, databaseUrl)
+        System.setProperty(Environment.JAKARTA_JDBC_URL, databaseUrl)
 
-        val app = Javalin.create()
         val emf = Persistence.createEntityManagerFactory("archiverApiUnit")
-
-        val registry = ExtensionRegistry.newInstance()
-        GtfsRealtimeNYCT.registerAllExtensions(registry)
-        val config = ProtobufJacksonConfig.builder().extensionRegistry(registry).build()
-        val mapper = ObjectMapper()
-        mapper.registerModule(ProtobufModule(config))
-
-        enableRequestBoundEntityManager(app, emf)
-
-        app.exception(NoResultException::class.java) { e, ctx ->
-            ctx.status(404)
-        }.error(404) { ctx ->
-            ctx.result("Not Found")
-        }
-
-        app.get("/{duration}/producers") { ctx ->
-            val em = ctx.entityManager
-
-            val d = Duration.parse(ctx.pathParam("duration"))
-
-            val end = Clock.System.now()
-            val start = end.minus(d)
-
-            val builder = em.criteriaBuilder
-            val criteria = builder.createQuery(String::class.java)
-            val root = criteria.from(FeedContents::class.java)
-
-            criteria.select(root.get(FeedContents_.producer))
-                .where(
-                    builder.equal(root.get(FeedContents_.isError), false),
-                    builder.between(root.get(FeedContents_.fetchTime), start.toJavaInstant(), end.toJavaInstant())
-                )
-                .distinct(true)
-
-            val q = em.createQuery(criteria)
-
-            ctx.json(q.resultList)
-        }
-
-        app.get("/{duration}/producers/{producer}/feeds") { ctx ->
-            val em = ctx.entityManager
-
-            val producer = ctx.pathParam("producer")
-
-            val d = Duration.parse(ctx.pathParam("duration"))
-
-            val end = Clock.System.now()
-            val start = end.minus(d)
-
-            val builder = em.criteriaBuilder
-            val criteria = builder.createQuery(String::class.java)
-            val root = criteria.from(FeedContents::class.java)
-
-            criteria.select(root.get(FeedContents_.feed))
-                .where(
-                    builder.equal(root.get(FeedContents_.isError), false),
-                    builder.equal(root.get(FeedContents_.producer), producer),
-                    builder.between(root.get(FeedContents_.fetchTime), start.toJavaInstant(), end.toJavaInstant())
-                )
-                .distinct(true)
-
-            val q = em.createQuery(criteria)
-
-            ctx.json(q.resultList)
-        }
-
-        app.get("/{duration}/producers/{producer}/feeds/{feed}/") { ctx ->
-            val em = ctx.entityManager
-
-            val producer = ctx.pathParam("producer")
-            val feed = ctx.pathParam("feed")
-
-            val d = Duration.parse(ctx.pathParam("duration"))
-
-            val end = Clock.System.now()
-            val start = end.minus(d)
-
-            val builder = em.criteriaBuilder
-            val criteria = builder.createQuery(Instant::class.java)
-            val root = criteria.from(FeedContents::class.java)
-
-            criteria.select(root.get(FeedContents_.fetchTime))
-                .where(
-                    builder.equal(root.get(FeedContents_.isError), false),
-                    builder.equal(root.get(FeedContents_.producer), producer),
-                    builder.equal(root.get(FeedContents_.feed), feed),
-                    builder.between(root.get(FeedContents_.fetchTime), start.toJavaInstant(), end.toJavaInstant())
-                )
-                .orderBy(builder.asc(root.get(FeedContents_.fetchTime)))
-
-            val q = em.createQuery(criteria)
-
-            ctx.json(q.resultStream.map { it.toString() }.toList())
-        }
-
-        app.get("/producers/{producer}/feeds/{feed}/{fetchTime}/{format}") { ctx ->
-            val em = ctx.entityManager
-
-            val producer = ctx.pathParam("producer")
-            val feed = ctx.pathParam("feed")
-
-            val fetchTime = Instant.parse(ctx.pathParam("fetchTime"))
-
-            val builder = em.criteriaBuilder
-            val criteria = builder.createQuery(FeedContents::class.java)
-            val root = criteria.from(FeedContents::class.java)
-
-            criteria.select(root)
-                .where(
-                    builder.equal(root.get(FeedContents_.isError), false),
-                    builder.equal(root.get(FeedContents_.producer), producer),
-                    builder.equal(root.get(FeedContents_.feed), feed),
-                    builder.equal(root.get(FeedContents_.fetchTime), fetchTime)
-                )
-
-            val q = em.createQuery(criteria)
-
-            val feedContents = q.singleResult
-
-            when (ctx.pathParam("format")) {
-                "json" -> ctx.json(feedContents.responseContents!!)
-                "json-full" -> ctx.json(feedContents)
-                "pb" -> {
-                    ctx.contentType("application/x-protobuf")
-                    val filename = "$producer-$feed-${timestampForFilename(fetchTime)}.pb"
-                    ctx.header("Content-Disposition", "attachment; filename=\"$filename\"")
-                    ctx.result(mapper.treeToValue(feedContents.responseContents, FeedMessage::class.java).toByteArray())
-                }
-
-                "pbtext" -> {
-                    ctx.contentType(ContentType.TEXT_PLAIN)
-                    ctx.result(mapper.treeToValue(feedContents.responseContents, FeedMessage::class.java).toString())
-                }
-            }
-        }
-
-        app.get("/{duration}/producers/{producer}/feeds/{feed}/bundle") { ctx ->
-            val em = ctx.entityManager
-
-            val producer = ctx.pathParam("producer")
-            val feed = ctx.pathParam("feed")
-
-            val d = Duration.parse(ctx.pathParam("duration"))
-
-            val end = Clock.System.now()
-            val start = end.minus(d)
-
-            val builder = em.criteriaBuilder
-            val criteria = builder.createQuery(FeedContents::class.java)
-            val root = criteria.from(FeedContents::class.java)
-            criteria.select(root)
-            criteria.where(
-                builder.equal(root.get(FeedContents_.isError), false),
-                builder.equal(root.get(FeedContents_.producer), producer),
-                builder.equal(root.get(FeedContents_.feed), feed),
-                builder.between(root.get(FeedContents_.fetchTime), start.toJavaInstant(), end.toJavaInstant())
-            )
-
-            val q = em.createQuery(criteria)
-            val os = ctx.outputStream()
-
-            val filename = "$producer-$feed-${timestampForFilename(end.toJavaInstant())}.tgz"
-
-            ctx.contentType("application/gzip")
-            ctx.header("Content-Disposition", "attachment; filename=\"$filename\"")
-
-            GzipCompressorOutputStream(os).use { gzo ->
-                TarArchiveOutputStream(gzo).use { aos ->
-                    q.resultStream.forEach { feedContents ->
-                        val protobufBytes =
-                            mapper.treeToValue(feedContents.responseContents, FeedMessage::class.java).toByteArray()
-
-                        val entryFilename = "${timestampForFilename(feedContents.fetchTime)}.pb"
-
-                        val entry = TarArchiveEntry(entryFilename)
-                        entry.size = protobufBytes.size.toLong()
-                        entry.creationTime = FileTime.from(feedContents.fetchTime)
-
-                        aos.putArchiveEntry(entry)
-                        aos.write(protobufBytes)
-
-                        aos.closeArchiveEntry()
-
-                        em.detach(feedContents)
-                    }
-                    aos.finish()
-                }
-            }
-        }
 
         val shutdownLatch = CountDownLatch(1)
 
-        Runtime.getRuntime().addShutdownHook(Thread { app.stop() })
+        val app = Javalin.create { config ->
+            config.validation.register(Duration::class.java, Duration::parse)
+            config.validation.register(Instant::class.java, Instant::parse)
+            config.validation.register(FetchMode::class.java) { FetchMode.valueOf(it.uppercase()) }
+            config.validation.register(ResponseFormat::class.java) { ResponseFormat.valueOf(it.uppercase()) }
+            config.validation.register(GtfsRealtimeExtensions::class.java) { GtfsRealtimeExtensions.valueOf(it.uppercase()) }
 
-        app.events { event: EventListener ->
-            event.serverStopped { shutdownLatch.countDown() }
+            //it.plugins.enableRouteOverview("route-overview")
+            config.jsonMapper(JavalinJackson().updateMapper { mapper ->
+                mapper.registerModule(GuavaModule())
+            })
+
+            config.appData(EntityManagerFactoryKey, emf)
+
+            config.router.apiBuilder {
+                path("duration/{duration}") {
+                    before(::parseDuration)
+
+                    registerCommonRoutes()
+                }
+
+                path("from/{begin}/to/{end}") {
+                    before(::parseBeginEnd)
+
+                    registerCommonRoutes()
+                }
+
+                path("producers/{producer}/feeds/{feed}/entries/{fetchTime}/format/{format}") {
+                    before(::parseExtensions)
+                    before(::buildMapper)
+                    get(::getFeedEntry)
+                }
+            }
+
+            config.events.serverStopped { shutdownLatch.countDown() }
+
         }
+
+        app.after {
+            val em = it.attribute<EntityManager?>("entityManager")
+
+            if (em != null) {
+                if (em.transaction.isActive) {
+                    em.transaction.rollback()
+                }
+                em.close()
+            }
+        }
+
+        app.exception(NoResultException::class.java) { _, ctx ->
+            ctx.status(404)
+        }
+
+        app.error(404) { ctx ->
+            ctx.result("Not Found")
+        }
+
+        Runtime.getRuntime().addShutdownHook(Thread { app.stop() })
 
         app.start(host, port)
 
@@ -262,11 +117,23 @@ class GtfsRtArchiverApi : Callable<Int> {
     }
 }
 
-fun enableRequestBoundEntityManager(app: Javalin, entityManagerFactory: EntityManagerFactory) {
-    app.attribute("entityManagerFactory", entityManagerFactory)
+fun registerCommonRoutes() {
+    path("producers") {
+        get(::getProducers)
+    }
 
-    app.after {
-        it.attribute<EntityManager?>("entityManager")?.close()
+    path("producers/{producer}/feeds") {
+        get(::getFeeds)
+    }
+
+    path("producers/{producer}/feeds/{feed}/entries") {
+        get(::getFeedEntries)
+    }
+
+    path("producers/{producer}/feeds/{feed}/bundle") {
+        before(::parseExtensions)
+        before(::buildMapper)
+        get(::getFeedEntriesBundle)
     }
 }
 
@@ -275,13 +142,9 @@ val Context.entityManager: EntityManager
         if (this.attribute<EntityManager>("entityManager") == null) {
             this.attribute(
                 "entityManager",
-                this.appAttribute<EntityManagerFactory>("entityManagerFactory").createEntityManager()
+                this.appData(EntityManagerFactoryKey).createEntityManager()
             )
         }
         return this.attribute("entityManager")!!
     }
 
-fun timestampForFilename(ts: Instant): String = ts.truncatedTo(ChronoUnit.SECONDS)
-    .toString()
-    .replace("-", "")
-    .replace(":", "")
