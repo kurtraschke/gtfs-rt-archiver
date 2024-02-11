@@ -36,7 +36,7 @@ fun parseBeginEnd(ctx: Context) {
 
 fun parseExtensions(ctx: Context) {
     val extensions = ctx.queryParams("extension").map {
-        ctx.appData(ValidationKey).validator("extension", GtfsRealtimeExtensions::class.java, it)
+        ctx.appData(ValidationKey).validator("extension", GtfsRealtimeExtensions::class.java, it).get()
     }
 
     ctx.attribute("extensions", extensions)
