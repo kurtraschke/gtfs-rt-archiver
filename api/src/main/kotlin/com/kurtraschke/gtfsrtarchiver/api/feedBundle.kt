@@ -60,7 +60,7 @@ fun getFeedEntriesBundle(ctx: Context) {
 
                 val entry = TarArchiveEntry(entryFilename)
                 entry.size = protobufBytes.size.toLong()
-                entry.creationTime = FileTime.from(feedContents.fetchTime)
+                entry.lastModifiedTime = FileTime.from(feedContents.fetchTime)
 
                 aos.putArchiveEntry(entry)
                 aos.write(protobufBytes)
