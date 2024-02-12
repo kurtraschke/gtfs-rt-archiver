@@ -370,6 +370,12 @@
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-agroal</artifactId>
                 <version>${hibernate.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>io.agroal</groupId>
+                        <artifactId>agroal-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.agroal</groupId>
