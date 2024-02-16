@@ -8,7 +8,6 @@
         <class>com.kurtraschke.gtfsrtarchiver.core.entities.FeedContents</class>
         <class>com.kurtraschke.gtfsrtarchiver.core.entities.FeedStats</class>
         <properties>
-            <property name="hibernate.agroal.maxSize" value="10"/>
             <property name="hibernate.physical_naming_strategy"
                       value="io.hypersistence.utils.hibernate.naming.CamelCaseToSnakeCaseNamingStrategy"/>
             <property name="hibernate.hbm2ddl.auto" value="none"/>
